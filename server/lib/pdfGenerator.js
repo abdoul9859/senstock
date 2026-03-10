@@ -20,7 +20,7 @@ function generateInvoicePDF(doc, settings = {}) {
 
       // ─── Header ───
       pdf.fontSize(20).font("Helvetica-Bold")
-        .text(settings.businessName || "StockFlow", 40, 40);
+        .text(settings.businessName || "SenStock", 40, 40);
 
       if (settings.businessAddress) {
         pdf.fontSize(9).font("Helvetica")
@@ -142,7 +142,7 @@ function generateInvoicePDF(doc, settings = {}) {
       // ─── Footer ───
       pdf.fontSize(8).font("Helvetica").fillColor("#999")
         .text(
-          `Document genere par StockFlow — ${new Date().toLocaleDateString("fr-FR")}`,
+          `Document genere par SenStock — ${new Date().toLocaleDateString("fr-FR")}`,
           40, 780, { width: pageWidth, align: "center" }
         );
 

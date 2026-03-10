@@ -182,7 +182,7 @@ export default function DoublonsClientsPage() {
   const [optRequests, setOptRequests] = useState(true);
   const [optCreances, setOptCreances] = useState(true);
 
-  const token = localStorage.getItem("mbayestock_token");
+  const token = localStorage.getItem("senstock_token");
 
   const fetchClients = async () => {
     setLoading(true);

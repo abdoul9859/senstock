@@ -36,8 +36,8 @@ export default defineConfig(({ mode }) => ({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
-        name: "StockFlow - Gestion de Stock",
-        short_name: "StockFlow",
+        name: "SenStock - Gestion de Stock",
+        short_name: "SenStock",
         description: "Application de gestion de stock, facturation et commerce",
         theme_color: "#10b981",
         background_color: "#0a0a0a",

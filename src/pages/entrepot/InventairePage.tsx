@@ -102,7 +102,7 @@ interface Product {
 
 // ---- Helpers ----
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -236,7 +236,7 @@ const InventairePage = () => {
   const [viewProduct, setViewProduct] = useState<Product | null>(null);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "list">(() => {
-    return (localStorage.getItem("mbayestock_view") as "grid" | "list") || _settings.defaultView;
+    return (localStorage.getItem("senstock_view") as "grid" | "list") || _settings.defaultView;
   });
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
@@ -1008,7 +1008,7 @@ const InventairePage = () => {
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="icon"
               className="h-8 w-8 rounded-r-none"
-              onClick={() => { setViewMode("grid"); localStorage.setItem("mbayestock_view", "grid"); }}
+              onClick={() => { setViewMode("grid"); localStorage.setItem("senstock_view", "grid"); }}
             >
               <LayoutGrid className="h-4 w-4" />
             </Button>
@@ -1016,7 +1016,7 @@ const InventairePage = () => {
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="icon"
               className="h-8 w-8 rounded-l-none"
-              onClick={() => { setViewMode("list"); localStorage.setItem("mbayestock_view", "list"); }}
+              onClick={() => { setViewMode("list"); localStorage.setItem("senstock_view", "list"); }}
             >
               <List className="h-4 w-4" />
             </Button>

@@ -22,7 +22,7 @@ export default function UpgradePrompt({ module }: Props) {
       </Text>
       <TouchableOpacity
         style={[styles.button, { backgroundColor: colors.primary }]}
-        onPress={() => Linking.openURL("https://stockflow.app/#tarifs")}
+        onPress={() => Linking.openURL("https://senstock.app/#tarifs")}
         activeOpacity={0.8}
       >
         <Text style={[styles.buttonText, { color: colors.primaryForeground }]}>Voir les plans</Text>

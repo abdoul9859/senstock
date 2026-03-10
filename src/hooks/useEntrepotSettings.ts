@@ -35,7 +35,7 @@ export const DEFAULT_SETTINGS: EntrepotSettings = {
   bcPrintColumns: 3,
 };
 
-const STORAGE_KEY = "mbayestock_entrepot_settings";
+const STORAGE_KEY = "senstock_entrepot_settings";
 
 function loadSettings(): EntrepotSettings {
   try {

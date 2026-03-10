@@ -77,7 +77,7 @@ const statusColors: Record<string, string> = {
 };
 
 function getToken() {
-  return localStorage.getItem("mbayestock_token") || "";
+  return localStorage.getItem("senstock_token") || "";
 }
 
 function fmtDate(d: string) {

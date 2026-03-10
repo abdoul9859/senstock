@@ -113,7 +113,7 @@ export default function HeroSection() {
               loaded ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
             }`}
           >
-            StockFlow centralise votre inventaire, vos ventes, vos employés et vos finances
+            SenStock centralise votre inventaire, vos ventes, vos employés et vos finances
             dans une seule application intuitive. Démarrez gratuitement, sans carte bancaire.
           </p>
 

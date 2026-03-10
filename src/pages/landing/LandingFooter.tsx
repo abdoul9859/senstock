@@ -45,7 +45,7 @@ const footerLinks = {
     { label: "Centre d'aide", href: "#" },
     { label: "Documentation", href: "#" },
     { label: "Communaute", href: "#" },
-    { label: "Contactez-nous", href: "mailto:contact@stockflow.app" },
+    { label: "Contactez-nous", href: "mailto:contact@senstock.app" },
     { label: "Statut des services", href: "#" },
   ],
 };
@@ -123,7 +123,7 @@ export default function LandingFooter() {
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
                 <Boxes className="h-4.5 w-4.5 text-primary-foreground" />
               </div>
-              <span className="text-lg font-semibold text-foreground">StockFlow</span>
+              <span className="text-lg font-semibold text-foreground">SenStock</span>
             </div>
             <p className="max-w-xs text-sm leading-relaxed text-muted-foreground">
               La plateforme de gestion tout-en-un pour les entreprises africaines.
@@ -205,11 +205,11 @@ export default function LandingFooter() {
           }`}
         >
           <a
-            href="mailto:contact@stockflow.app"
+            href="mailto:contact@senstock.app"
             className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors"
           >
             <Mail className="h-4 w-4" />
-            contact@stockflow.app
+            contact@senstock.app
           </a>
           <a
             href="tel:+221771234567"
@@ -232,7 +232,7 @@ export default function LandingFooter() {
         >
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
-              <p>&copy; {new Date().getFullYear()} StockFlow. Tous droits reserves.</p>
+              <p>&copy; {new Date().getFullYear()} SenStock. Tous droits reserves.</p>
               <span className="hidden sm:inline text-border">|</span>
               <a href="#" className="hover:text-primary transition-colors">Conditions d'utilisation</a>
               <a href="#" className="hover:text-primary transition-colors">Politique de confidentialite</a>

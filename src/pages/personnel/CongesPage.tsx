@@ -61,7 +61,7 @@ const statusColors: Record<string, string> = {
 function getHeaders() {
   return {
     "Content-Type": "application/json",
-    Authorization: `Bearer ${localStorage.getItem("mbayestock_token")}`,
+    Authorization: `Bearer ${localStorage.getItem("senstock_token")}`,
   };
 }
 

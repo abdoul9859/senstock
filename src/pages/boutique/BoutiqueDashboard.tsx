@@ -65,7 +65,7 @@ export default function BoutiqueDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const token = localStorage.getItem("mbayestock_token");
+  const token = localStorage.getItem("senstock_token");
 
   const fetchData = useCallback(async () => {
     setLoading(true);

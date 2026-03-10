@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Search, Package, Barcode, Truck, Users, X } from "lucide-react";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 interface ProductResult {
   _id: string;

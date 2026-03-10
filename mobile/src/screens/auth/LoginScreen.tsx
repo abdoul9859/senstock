@@ -53,7 +53,7 @@ export default function LoginScreen() {
           <View style={[styles.logoCircle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Boxes size={32} color={colors.primary} />
           </View>
-          <Text style={[styles.appName, { color: colors.text }]}>StockFlow</Text>
+          <Text style={[styles.appName, { color: colors.text }]}>SenStock</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>Connectez-vous a votre compte</Text>
         </View>
 

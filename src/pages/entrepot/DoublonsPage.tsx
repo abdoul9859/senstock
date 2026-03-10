@@ -174,7 +174,7 @@ export default function DoublonsPage() {
   const [merging, setMerging] = useState(false);
   const [optTransferVariants, setOptTransferVariants] = useState(true);
   const [optAddQuantities, setOptAddQuantities] = useState(true);
-  const token = localStorage.getItem("mbayestock_token");
+  const token = localStorage.getItem("senstock_token");
 
   const fetchProducts = async () => {
     setLoading(true);

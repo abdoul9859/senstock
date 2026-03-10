@@ -12,9 +12,9 @@ import {
 import { StockLoader } from "@/components/StockLoader";
 import { getEntrepotSettings } from "@/hooks/useEntrepotSettings";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 // Use relative URLs — Vite proxy routes /api to the server
-const OBJECTIFS_KEY = "mbayestock_objectifs";
+const OBJECTIFS_KEY = "senstock_objectifs";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

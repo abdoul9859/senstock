@@ -27,7 +27,7 @@ import { THEME_PRESETS, type ThemePreset } from "@/lib/themePresets";
 // Use relative URLs — Vite proxy routes /api to the server
 
 function getToken() {
-  return localStorage.getItem("mbayestock_token") || "";
+  return localStorage.getItem("senstock_token") || "";
 }
 
 async function fetchSettings() {

@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { MessageCircle, Mail, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

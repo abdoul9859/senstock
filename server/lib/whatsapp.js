@@ -18,7 +18,7 @@ async function getWhatsAppConfig(tenantId) {
     return {
       apiUrl: settings.whatsappApiUrl || process.env.EVOLUTION_API_URL,
       apiKey: settings.whatsappApiKey || process.env.EVOLUTION_API_KEY,
-      instanceName: settings.whatsappInstanceName || process.env.EVOLUTION_INSTANCE_NAME || "stockflow",
+      instanceName: settings.whatsappInstanceName || process.env.EVOLUTION_INSTANCE_NAME || "senstock",
       connected: settings.whatsappConnected,
     };
   }
@@ -28,7 +28,7 @@ async function getWhatsAppConfig(tenantId) {
     return {
       apiUrl: process.env.EVOLUTION_API_URL,
       apiKey: process.env.EVOLUTION_API_KEY,
-      instanceName: process.env.EVOLUTION_INSTANCE_NAME || "stockflow",
+      instanceName: process.env.EVOLUTION_INSTANCE_NAME || "senstock",
       connected: false,
     };
   }

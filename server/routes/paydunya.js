@@ -76,7 +76,7 @@ router.post("/create-invoice", async (req, res) => {
         description: `Commande ${order.number}`,
       },
       store: {
-        name: "StockFlow Boutique",
+        name: "SenStock Boutique",
       },
       custom_data: {
         order_id: order.id,

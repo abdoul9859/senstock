@@ -1,5 +1,5 @@
 /**
- * WhatsApp message templates for StockFlow documents.
+ * WhatsApp message templates for SenStock documents.
  * All messages in French, tailored for Senegalese businesses.
  */
 

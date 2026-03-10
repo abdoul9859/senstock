@@ -187,7 +187,7 @@ const RegisterPage = () => {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
             <Boxes className="h-5 w-5 text-primary-foreground" />
           </div>
-          <h1 className="text-xl font-semibold text-foreground">StockFlow</h1>
+          <h1 className="text-xl font-semibold text-foreground">SenStock</h1>
           <p className="text-sm text-muted-foreground">Creez votre compte</p>
         </div>
 

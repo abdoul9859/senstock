@@ -77,7 +77,7 @@ router.post("/send-invoice/:id", async (req, res) => {
     if (!invoice.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
     const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "StockFlow";
+    const companyName = settings?.businessName || "SenStock";
 
     // Generate PDF
     const pdfBuffer = await generateInvoicePDF(invoice, settings || {});
@@ -126,7 +126,7 @@ router.post("/send-quote/:id", async (req, res) => {
     if (!quote.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
     const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "StockFlow";
+    const companyName = settings?.businessName || "SenStock";
 
     // Generate PDF (reuse invoice PDF generator with type=devis)
     const pdfBuffer = await generateInvoicePDF({ ...quote, type: "devis" }, settings || {});
@@ -174,7 +174,7 @@ router.post("/send-delivery-note/:id", async (req, res) => {
     if (!note.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
     const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "StockFlow";
+    const companyName = settings?.businessName || "SenStock";
 
     const message = deliveryNotification({
       clientName: note.client.name,
@@ -219,7 +219,7 @@ router.post("/send-debt-reminder/:id", async (req, res) => {
     if (!creance.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
     const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "StockFlow";
+    const companyName = settings?.businessName || "SenStock";
 
     const remaining = creance.amount - creance.amountPaid;
     const message = debtReminder({

@@ -176,7 +176,7 @@ export default function SettingsScreen() {
           </View>
         </TouchableOpacity>
 
-        <MenuItem icon={<Globe size={18} color={colors.info} />} label="Ouvrir StockFlow Web"
+        <MenuItem icon={<Globe size={18} color={colors.info} />} label="Ouvrir SenStock Web"
           onPress={() => {
             const host = typeof window !== "undefined" ? window.location.hostname : "localhost";
             Linking.openURL(`http://${host}:8080`);
@@ -184,7 +184,7 @@ export default function SettingsScreen() {
         <MenuItem icon={<Database size={18} color={colors.textMuted} />} label="Synchroniser les donnees"
           onPress={() => { refreshTenant(); showAlert("Sync", "Donnees synchronisees"); }} colors={colors} />
         <MenuItem icon={<Info size={18} color={colors.textMuted} />} label="A propos"
-          onPress={() => showAlert("StockFlow Mobile", "Version 1.0.0\nApplication de gestion commerciale")} colors={colors} />
+          onPress={() => showAlert("SenStock Mobile", "Version 1.0.0\nApplication de gestion commerciale")} colors={colors} />
       </View>
 
       {/* Logout */}

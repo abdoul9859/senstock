@@ -194,7 +194,7 @@ export const UPGRADE_BANNERS: {
   {
     fromPlan: "essai",
     targetPlan: "premium",
-    title: "Debloquez tout le potentiel de StockFlow",
+    title: "Debloquez tout le potentiel de SenStock",
     description: "Accedez aux 8 modules, gerez 5 000 produits, 1 000 factures/mois et 10 utilisateurs.",
     cta: "Passer au Premium",
     highlight: "Le plus populaire",
@@ -241,7 +241,7 @@ export const UPGRADE_BANNERS: {
     fromPlan: "premium",
     targetPlan: "entreprise",
     title: "Acces API pour vos integrations",
-    description: "Connectez StockFlow a vos outils existants grace a l'API REST complete.",
+    description: "Connectez SenStock a vos outils existants grace a l'API REST complete.",
     cta: "Debloquer l'API",
   },
 ];

@@ -26,7 +26,7 @@ export default function ModulesGridScreen() {
   return (
     <ScreenContainer>
       <Text style={[styles.intro, { color: colors.textMuted }]}>
-        Acces rapide aux modules supplementaires de StockFlow.
+        Acces rapide aux modules supplementaires de SenStock.
       </Text>
 
       <View style={styles.grid}>

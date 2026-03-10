@@ -5,7 +5,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { StockLoader } from "@/components/StockLoader";
 import { getEntrepotSettings } from "@/hooks/useEntrepotSettings";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 // Use relative URLs — Vite proxy routes /api to the server
 
 function getHeaders() {

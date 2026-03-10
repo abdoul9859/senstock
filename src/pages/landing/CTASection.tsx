@@ -46,7 +46,7 @@ export default function CTASection() {
                 revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
               }`}
             >
-              Rejoignez des centaines d'entreprises qui ont déjà simplifié leur quotidien avec StockFlow.
+              Rejoignez des centaines d'entreprises qui ont déjà simplifié leur quotidien avec SenStock.
               Commencez gratuitement en moins de 2 minutes.
             </p>
 

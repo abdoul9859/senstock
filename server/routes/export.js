@@ -66,7 +66,7 @@ function renderInvoicePage(pdf, doc, settings) {
 
   // Header
   pdf.fontSize(20).font("Helvetica-Bold")
-    .text(settings.businessName || "StockFlow", 40, 40);
+    .text(settings.businessName || "SenStock", 40, 40);
 
   if (settings.businessAddress) {
     pdf.fontSize(9).font("Helvetica").text(settings.businessAddress, 40, 65);
@@ -150,7 +150,7 @@ function renderInvoicePage(pdf, doc, settings) {
 
   // Footer
   pdf.fontSize(8).font("Helvetica").fillColor("#999")
-    .text(`Document genere par StockFlow`, 40, 780, { width: pageWidth, align: "center" });
+    .text(`Document genere par SenStock`, 40, 780, { width: pageWidth, align: "center" });
   pdf.fillColor("#000");
 }
 

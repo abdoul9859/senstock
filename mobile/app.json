@@ -1,12 +1,12 @@
 {
   "expo": {
-    "name": "StockFlow",
-    "slug": "stockflow",
+    "name": "SenStock",
+    "slug": "senstock",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "scheme": "stockflow",
+    "scheme": "senstock",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -14,10 +14,10 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.stockflow.app"
+      "bundleIdentifier": "com.senstock.app"
     },
     "android": {
-      "package": "com.stockflow.app",
+      "package": "com.senstock.app",
       "adaptiveIcon": {
         "backgroundColor": "#0a0a0a",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -30,8 +30,8 @@
       "favicon": "./assets/favicon.png",
       "backgroundColor": "#0a0a0a",
       "themeColor": "#0a0a0a",
-      "name": "StockFlow",
-      "shortName": "StockFlow"
+      "name": "SenStock",
+      "shortName": "SenStock"
     },
     "plugins": [
       "expo-secure-store",

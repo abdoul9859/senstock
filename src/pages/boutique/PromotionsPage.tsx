@@ -54,7 +54,7 @@ export default function PromotionsPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
-  const token = localStorage.getItem("mbayestock_token");
+  const token = localStorage.getItem("senstock_token");
 
   const fetchPromos = useCallback(async () => {
     setLoading(true);

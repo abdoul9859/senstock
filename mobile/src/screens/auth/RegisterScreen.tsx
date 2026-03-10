@@ -58,7 +58,7 @@ export default function RegisterScreen() {
           <View style={[styles.logoCircle, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Boxes size={32} color={colors.primary} />
           </View>
-          <Text style={[styles.appName, { color: colors.text }]}>StockFlow</Text>
+          <Text style={[styles.appName, { color: colors.text }]}>SenStock</Text>
           <Text style={[styles.subtitle, { color: colors.textMuted }]}>Creez votre compte</Text>
         </View>
 

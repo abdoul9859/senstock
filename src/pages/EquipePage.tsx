@@ -16,7 +16,7 @@ import {
   UserPlus, Crown, UserCog, ChevronDown, ChevronRight, Save, X,
 } from "lucide-react";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

@@ -10,7 +10,7 @@ import { useWorkspace } from "@/contexts/WorkspaceContext";
 
 function useTheme() {
   const [theme, setTheme] = useState<"dark" | "light">(() => {
-    return (localStorage.getItem("mbayestock_theme") as "dark" | "light") || "dark";
+    return (localStorage.getItem("senstock_theme") as "dark" | "light") || "dark";
   });
 
   useEffect(() => {
@@ -20,7 +20,7 @@ function useTheme() {
     } else {
       root.classList.remove("light");
     }
-    localStorage.setItem("mbayestock_theme", theme);
+    localStorage.setItem("senstock_theme", theme);
   }, [theme]);
 
   const toggle = () => setTheme((t) => (t === "dark" ? "light" : "dark"));
@@ -35,7 +35,7 @@ export const AppLayout = () => {
   const [notifCount, setNotifCount] = useState(0);
 
   const fetchNotifCount = useCallback(async () => {
-    const token = localStorage.getItem("mbayestock_token");
+    const token = localStorage.getItem("senstock_token");
     if (!token) return;
     try {
       const res = await fetch("/api/tasks/notification-count", {

@@ -6,11 +6,11 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
     environment:
-      - POSTGRES_DB=mbayestock
-      - POSTGRES_USER=mbayestock
-      - POSTGRES_PASSWORD=mbayestock_pass
+      - POSTGRES_DB=senstock
+      - POSTGRES_USER=senstock
+      - POSTGRES_PASSWORD=senstock_pass
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U mbayestock"]
+      test: ["CMD-SHELL", "pg_isready -U senstock"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -27,10 +27,10 @@ services:
       - /app/node_modules
       - uploads_data:/app/uploads
     environment:
-      - DATABASE_URL=postgresql://mbayestock:mbayestock_pass@postgres:5432/mbayestock
-      - JWT_SECRET=mbayestock_jwt_secret_change_me
+      - DATABASE_URL=postgresql://senstock:senstock_pass@postgres:5432/senstock
+      - JWT_SECRET=senstock_jwt_secret_change_me
       - ADMIN_NAME=Admin
-      - ADMIN_EMAIL=admin@mbayestock.com
+      - ADMIN_EMAIL=admin@senstock.com
       - ADMIN_PASSWORD=admin123
       - PORT=5000
       - STRIPE_SECRET_KEY=${STRIPE_SECRET_KEY:-sk_test_placeholder}
@@ -44,10 +44,10 @@ services:
       - SMTP_SECURE=${SMTP_SECURE:-false}
       - SMTP_USER=${SMTP_USER:-}
       - SMTP_PASS=${SMTP_PASS:-}
-      - SMTP_FROM=${SMTP_FROM:-StockFlow <noreply@stockflow.app>}
+      - SMTP_FROM=${SMTP_FROM:-SenStock <noreply@senstock.app>}
       - EVOLUTION_API_URL=${EVOLUTION_API_URL:-http://evolution-api:8080}
-      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY:-evo_stockflow_secret_key}
-      - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME:-stockflow}
+      - EVOLUTION_API_KEY=${EVOLUTION_API_KEY:-evo_senstock_secret_key}
+      - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME:-senstock}
 
   app:
     build: .
@@ -86,9 +86,9 @@ services:
       PG_META_PORT: 8080
       PG_META_DB_HOST: postgres
       PG_META_DB_PORT: 5432
-      PG_META_DB_NAME: mbayestock
-      PG_META_DB_USER: mbayestock
-      PG_META_DB_PASSWORD: mbayestock_pass
+      PG_META_DB_NAME: senstock
+      PG_META_DB_USER: senstock
+      PG_META_DB_PASSWORD: senstock_pass
 
   mobile:
     build: ./mobile
@@ -110,12 +110,12 @@ services:
       - SERVER_URL=http://localhost:8085
       - DATABASE_ENABLED=true
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://mbayestock:mbayestock_pass@postgres:5432/mbayestock?schema=evolution
+      - DATABASE_CONNECTION_URI=postgresql://senstock:senstock_pass@postgres:5432/senstock?schema=evolution
       - DATABASE_SAVE_DATA_INSTANCE=true
       - DATABASE_SAVE_DATA_NEW_MESSAGE=true
       - DATABASE_SAVE_DATA_CONTACTS=true
       - AUTHENTICATION_TYPE=apikey
-      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-evo_stockflow_secret_key}
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY:-evo_senstock_secret_key}
       - LOG_LEVEL=WARN
     restart: unless-stopped
 

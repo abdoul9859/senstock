@@ -13,7 +13,7 @@ import {
   CreditCard, Check, Crown, Star, ExternalLink, AlertCircle, X, Users,
 } from "lucide-react";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);
@@ -572,7 +572,7 @@ export default function ParametresGlobalPage() {
                 <Input
                   value={companyForm.companyName}
                   onChange={(e) => updateCompany("companyName", e.target.value)}
-                  placeholder="Ex: MbayeStock SARL"
+                  placeholder="Ex: SenStock SARL"
                 />
               </div>
               <div>
@@ -733,7 +733,7 @@ export default function ParametresGlobalPage() {
                     <Input
                       value={companyForm.whatsappInstanceName}
                       onChange={(e) => updateCompany("whatsappInstanceName", e.target.value)}
-                      placeholder="stockflow"
+                      placeholder="senstock"
                     />
                   </div>
                   <div>

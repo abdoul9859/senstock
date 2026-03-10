@@ -27,7 +27,7 @@ import { getEntrepotSettings } from "@/hooks/useEntrepotSettings";
 import { exportToCsv } from "@/lib/exportCsv";
 import { toast } from "sonner";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

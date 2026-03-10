@@ -12,7 +12,7 @@ import {
 import { toast } from "sonner";
 import { Settings, Save } from "lucide-react";
 
-const STORAGE_KEY = "mbayestock_banque_settings";
+const STORAGE_KEY = "senstock_banque_settings";
 
 interface BanqueSettings {
   defaultCurrency: string;

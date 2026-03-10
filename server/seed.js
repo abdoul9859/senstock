@@ -32,7 +32,7 @@ async function seed() {
   await prisma.user.create({
     data: {
       name: process.env.ADMIN_NAME || "Admin",
-      email: process.env.ADMIN_EMAIL || "admin@mbayestock.com",
+      email: process.env.ADMIN_EMAIL || "admin@senstock.com",
       password: hashedPassword,
       role: "admin",
       tenantId: tenant.id,

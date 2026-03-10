@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 
-const CART_KEY = "mbayestock_cart";
-const PROMO_KEY = "mbayestock_cart_promo";
+const CART_KEY = "senstock_cart";
+const PROMO_KEY = "senstock_cart_promo";
 
 export interface CartItem {
   cartKey: string;

@@ -29,7 +29,7 @@ export default function UpgradePrompt({ module }: UpgradePromptProps) {
   const promo = MODULE_PROMOS[module];
 
   async function handleUpgrade() {
-    const token = localStorage.getItem("mbayestock_token");
+    const token = localStorage.getItem("senstock_token");
     try {
       const res = await fetch("/api/stripe/create-checkout-session", {
         method: "POST",

@@ -1,6 +1,6 @@
 import { Platform } from "react-native";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 // ── Platform-aware API base ──
 function getApiBase(): string {
@@ -8,11 +8,11 @@ function getApiBase(): string {
   if (Platform.OS === "web" && typeof window !== "undefined") {
     const host = window.location.hostname;
     // Production domain → use production API
-    if (host === "app.stockflow.app") return "https://api.stockflow.app";
+    if (host === "app.senstock.app") return "https://api.senstock.app";
     // Local/network → use same host with API port
     return `http://${host}:5000`;
   }
-  if (!__DEV__) return "https://api.stockflow.app";
+  if (!__DEV__) return "https://api.senstock.app";
   // Android emulator → host via 10.0.2.2
   if (Platform.OS === "android") return "http://10.0.2.2:5000";
   // iOS simulator → localhost works

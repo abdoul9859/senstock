@@ -108,7 +108,7 @@ export const AppSidebar = () => {
 
   const fetchTrashCount = useCallback(async () => {
     try {
-      const token = localStorage.getItem("mbayestock_token");
+      const token = localStorage.getItem("senstock_token");
       if (!token) return;
       const res = await fetch("/api/trash/count", {
         headers: { Authorization: `Bearer ${token}` },
@@ -194,7 +194,7 @@ export const AppSidebar = () => {
           </div>
           {!collapsed && (
             <div className="min-w-0">
-              <h1 className="text-sm font-semibold text-foreground">StockFlow</h1>
+              <h1 className="text-sm font-semibold text-foreground">SenStock</h1>
               <p className="text-[10px] text-muted-foreground">v1.0.0</p>
             </div>
           )}

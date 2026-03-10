@@ -37,8 +37,8 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const TOKEN_KEY = "mbayestock_token";
-const REFRESH_KEY = "mbayestock_refresh";
+const TOKEN_KEY = "senstock_token";
+const REFRESH_KEY = "senstock_refresh";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

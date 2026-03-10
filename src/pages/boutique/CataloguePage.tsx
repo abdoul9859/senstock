@@ -107,7 +107,7 @@ export default function CataloguePage() {
     featured: false,
     attributes: {},
   });
-  const token = localStorage.getItem("mbayestock_token");
+  const token = localStorage.getItem("senstock_token");
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);

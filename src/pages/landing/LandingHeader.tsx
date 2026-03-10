@@ -34,7 +34,7 @@ export default function LandingHeader() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
             <Boxes className="h-4.5 w-4.5 text-primary-foreground" />
           </div>
-          <span className="text-lg font-semibold text-foreground">StockFlow</span>
+          <span className="text-lg font-semibold text-foreground">SenStock</span>
         </a>
 
         {/* Desktop Nav */}

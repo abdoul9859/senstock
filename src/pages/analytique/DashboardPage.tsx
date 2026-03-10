@@ -5,7 +5,7 @@ import { StatCard } from "@/components/StockCard";
 import { StockLoader } from "@/components/StockLoader";
 import { getEntrepotSettings } from "@/hooks/useEntrepotSettings";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

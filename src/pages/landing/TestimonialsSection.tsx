@@ -4,14 +4,14 @@ import { Quote } from "lucide-react";
 const testimonials = [
   {
     quote:
-      "StockFlow a transformé la gestion de mon magasin. Je sais exactement ce que j'ai en stock et mes factures sont prêtes en quelques clics.",
+      "SenStock a transformé la gestion de mon magasin. Je sais exactement ce que j'ai en stock et mes factures sont prêtes en quelques clics.",
     name: "Aminata Diallo",
     role: "Gérante, Diallo Textiles",
     initials: "AD",
   },
   {
     quote:
-      "Avant StockFlow, je perdais des heures sur Excel. Maintenant, je gère mes 3 boutiques depuis une seule interface. Le module analytique est un vrai plus.",
+      "Avant SenStock, je perdais des heures sur Excel. Maintenant, je gère mes 3 boutiques depuis une seule interface. Le module analytique est un vrai plus.",
     name: "Moussa Ndiaye",
     role: "Directeur, Ndiaye Distribution",
     initials: "MN",
@@ -58,7 +58,7 @@ export default function TestimonialsSection() {
               revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            Des entrepreneurs comme vous utilisent StockFlow au quotidien.
+            Des entrepreneurs comme vous utilisent SenStock au quotidien.
           </p>
         </div>
 

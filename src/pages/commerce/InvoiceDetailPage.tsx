@@ -21,7 +21,7 @@ import { getTemplateById } from "@/components/invoice-templates";
 import { toast } from "sonner";
 import { usePrintFooterPush } from "@/hooks/usePrintFooterPush";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

@@ -8,7 +8,7 @@ import { useScrollReveal } from "./useScrollReveal";
 
 const faqs = [
   {
-    question: "Puis-je essayer StockFlow gratuitement ?",
+    question: "Puis-je essayer SenStock gratuitement ?",
     answer:
       "Oui ! Notre plan Essai Gratuit vous permet de decouvrir la plateforme pendant 14 jours sans carte bancaire. Vous pouvez ensuite passer au plan Revendeur, Premium ou Entreprise selon vos besoins.",
   },
@@ -28,9 +28,9 @@ const faqs = [
       "Oui, vous pouvez passer à un plan supérieur ou inférieur à tout moment. Le changement prend effet immédiatement et la facturation est ajustée au prorata.",
   },
   {
-    question: "StockFlow est-il adapté à mon secteur ?",
+    question: "SenStock est-il adapté à mon secteur ?",
     answer:
-      "StockFlow est conçu pour tout type de commerce : boutiques, grossistes, restaurants, ateliers, prestataires de services et plus encore. Les modules s'adaptent à vos besoins.",
+      "SenStock est conçu pour tout type de commerce : boutiques, grossistes, restaurants, ateliers, prestataires de services et plus encore. Les modules s'adaptent à vos besoins.",
   },
   {
     question: "Comment fonctionne le support ?",
@@ -71,7 +71,7 @@ export default function FAQSection() {
               revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
             }`}
           >
-            Tout ce que vous devez savoir pour démarrer avec StockFlow.
+            Tout ce que vous devez savoir pour démarrer avec SenStock.
           </p>
         </div>
 

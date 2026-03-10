@@ -4,7 +4,7 @@ import { darkColors, lightColors, setActiveColors, type ThemeColors } from "../c
 
 type ThemeMode = "dark" | "light";
 
-const THEME_KEY = "stockflow_theme";
+const THEME_KEY = "senstock_theme";
 
 // ── Persistence helpers (same pattern as api.ts token storage) ──
 async function loadTheme(): Promise<ThemeMode | null> {

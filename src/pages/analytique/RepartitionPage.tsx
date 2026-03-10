@@ -7,7 +7,7 @@ import { StockLoader } from "@/components/StockLoader";
 import { getEntrepotSettings } from "@/hooks/useEntrepotSettings";
 import { useAuth } from "@/contexts/AuthContext";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 // Use relative URLs — Vite proxy routes /api to the server
 
 function getHeaders() {

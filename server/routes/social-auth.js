@@ -211,12 +211,12 @@ router.post("/magic/send", async (req, res) => {
       });
 
       await transporter.sendMail({
-        from: process.env.SMTP_FROM || "StockFlow <noreply@stockflow.app>",
+        from: process.env.SMTP_FROM || "SenStock <noreply@senstock.app>",
         to: email,
-        subject: "Votre code de connexion StockFlow",
+        subject: "Votre code de connexion SenStock",
         html: `
           <div style="font-family: sans-serif; max-width: 400px; margin: 0 auto; padding: 32px;">
-            <h2 style="color: #10b981;">StockFlow</h2>
+            <h2 style="color: #10b981;">SenStock</h2>
             <p>Votre code de connexion :</p>
             <div style="font-size: 32px; font-weight: bold; letter-spacing: 8px; text-align: center; padding: 24px; background: #f4f4f5; border-radius: 8px; margin: 16px 0;">
               ${code}

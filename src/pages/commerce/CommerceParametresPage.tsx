@@ -230,7 +230,7 @@ const CommerceParametresPage = () => {
                   id="biz-name"
                   value={settings.businessName}
                   onChange={(e) => updateSettings({ businessName: e.target.value })}
-                  placeholder="MbayeStock"
+                  placeholder="SenStock"
                 />
               </div>
               <div className="space-y-2">
@@ -263,7 +263,7 @@ const CommerceParametresPage = () => {
                   type="email"
                   value={settings.businessEmail}
                   onChange={(e) => updateSettings({ businessEmail: e.target.value })}
-                  placeholder="contact@mbayestock.com"
+                  placeholder="contact@senstock.com"
                 />
               </div>
             </div>

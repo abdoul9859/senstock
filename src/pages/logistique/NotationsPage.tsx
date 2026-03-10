@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { Star, Plus, Loader2, Users, MessageSquare } from "lucide-react";
 import { StockLoader } from "@/components/StockLoader";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 function getHeaders() {
   const token = localStorage.getItem(TOKEN_KEY);

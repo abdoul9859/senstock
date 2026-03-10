@@ -9,7 +9,7 @@ import StepCompany, { CompanyData } from "./steps/StepCompany";
 import StepInvoiceTemplate, { InvoiceData } from "./steps/StepInvoiceTemplate";
 import StepConfirm from "./steps/StepConfirm";
 
-const TOKEN_KEY = "mbayestock_token";
+const TOKEN_KEY = "senstock_token";
 
 const steps = [
   { label: "Plan", description: "Choisir un abonnement" },
@@ -150,7 +150,7 @@ export default function OnboardingPage() {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Boxes className="h-5 w-5" />
             </div>
-            <span className="font-bold text-lg">StockFlow</span>
+            <span className="font-bold text-lg">SenStock</span>
           </div>
           <div className="text-sm text-muted-foreground">
             Configuration de votre espace

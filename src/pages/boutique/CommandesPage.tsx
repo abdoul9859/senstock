@@ -98,7 +98,7 @@ export default function CommandesPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [detail, setDetail] = useState<Order | null>(null);
-  const token = localStorage.getItem("mbayestock_token");
+  const token = localStorage.getItem("senstock_token");
 
   const fetchOrders = useCallback(async () => {
     setLoading(true);

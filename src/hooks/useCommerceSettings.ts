@@ -31,7 +31,7 @@ export const DEFAULT_COMMERCE_SETTINGS: CommerceSettings = {
   showPurchasePrice: false,
 };
 
-const STORAGE_KEY = "mbayestock_commerce_settings";
+const STORAGE_KEY = "senstock_commerce_settings";
 
 function loadSettings(): CommerceSettings {
   try {

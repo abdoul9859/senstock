@@ -92,7 +92,7 @@ interface Board {
 }
 
 function getToken() {
-  return localStorage.getItem("mbayestock_token") || "";
+  return localStorage.getItem("senstock_token") || "";
 }
 
 const priorityConfig: Record<string, { label: string; color: string; icon: typeof ArrowUp }> = {

@@ -12,7 +12,7 @@ export interface BoutiqueSettings {
   footerText: string;
 }
 
-const STORAGE_KEY = "mbayestock_boutique_settings";
+const STORAGE_KEY = "senstock_boutique_settings";
 
 const defaultSettings: BoutiqueSettings = {
   shopName: "MBaye Boutique",
