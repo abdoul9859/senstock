@@ -1,0 +1,577 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+@layer base {
+  :root {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 95%;
+
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 142 70% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 95%;
+
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 55%;
+
+    --accent: 0 0% 14%;
+    --accent-foreground: 0 0% 95%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 142 70% 45%;
+
+    --radius: 0.5rem;
+
+    --sidebar-background: 0 0% 5.5%;
+    --sidebar-foreground: 0 0% 65%;
+    --sidebar-primary: 142 70% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 10%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 0 0% 12%;
+    --sidebar-ring: 142 70% 45%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 100% 52%;
+    --info-foreground: 0 0% 100%;
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+  }
+
+  .light {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 9%;
+
+    --card: 0 0% 98%;
+    --card-foreground: 0 0% 9%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 9%;
+
+    --primary: 142 70% 40%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 15%;
+
+    --muted: 0 0% 94%;
+    --muted-foreground: 0 0% 45%;
+
+    --accent: 0 0% 94%;
+    --accent-foreground: 0 0% 9%;
+
+    --destructive: 0 84% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 0 0% 88%;
+    --input: 0 0% 88%;
+    --ring: 142 70% 40%;
+
+    --sidebar-background: 0 0% 97%;
+    --sidebar-foreground: 0 0% 40%;
+    --sidebar-primary: 142 70% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 0 0% 92%;
+    --sidebar-accent-foreground: 0 0% 9%;
+    --sidebar-border: 0 0% 90%;
+    --sidebar-ring: 142 70% 40%;
+
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+    --info: 210 100% 52%;
+    --info-foreground: 0 0% 100%;
+    --success: 142 70% 40%;
+    --success-foreground: 0 0% 100%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* ── Page & component animations ── */
+@keyframes page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-page-in {
+  animation: page-in 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered card grid — apply to each card element */
+.animate-card {
+  animation: fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+}
+.animate-card:nth-child(1) { animation-delay: 0ms; }
+.animate-card:nth-child(2) { animation-delay: 50ms; }
+.animate-card:nth-child(3) { animation-delay: 100ms; }
+.animate-card:nth-child(4) { animation-delay: 150ms; }
+.animate-card:nth-child(5) { animation-delay: 200ms; }
+.animate-card:nth-child(6) { animation-delay: 250ms; }
+.animate-card:nth-child(7) { animation-delay: 300ms; }
+.animate-card:nth-child(8) { animation-delay: 350ms; }
+
+/* Sidebar active nav indicator */
+.nav-active-dot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 2px 2px 0;
+  background: hsl(var(--primary));
+}
+
+/* ── Enhanced animations ── */
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes slide-out-right {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(12px); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+  20%, 40%, 60%, 80% { transform: translateX(4px); }
+}
+
+@keyframes collapse {
+  from { opacity: 1; max-height: 80px; transform: scale(1); }
+  to   { opacity: 0; max-height: 0; transform: scale(0.95); padding: 0; margin: 0; overflow: hidden; }
+}
+
+@keyframes pop-in {
+  0%   { opacity: 0; transform: scale(0.8); }
+  70%  { transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@keyframes count-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slide-up-fade {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-slide-in-left {
+  animation: slide-in-left 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.25s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.animate-collapse {
+  animation: collapse 0.3s ease-out forwards;
+}
+
+.animate-pop-in {
+  animation: pop-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.animate-count-up {
+  animation: count-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* Staggered table rows — apply animate-row to each <tr> */
+.animate-row {
+  animation: slide-up-fade 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+}
+.animate-row:nth-child(1)  { animation-delay: 0ms; }
+.animate-row:nth-child(2)  { animation-delay: 30ms; }
+.animate-row:nth-child(3)  { animation-delay: 60ms; }
+.animate-row:nth-child(4)  { animation-delay: 90ms; }
+.animate-row:nth-child(5)  { animation-delay: 120ms; }
+.animate-row:nth-child(6)  { animation-delay: 150ms; }
+.animate-row:nth-child(7)  { animation-delay: 180ms; }
+.animate-row:nth-child(8)  { animation-delay: 210ms; }
+.animate-row:nth-child(9)  { animation-delay: 240ms; }
+.animate-row:nth-child(10) { animation-delay: 270ms; }
+.animate-row:nth-child(11) { animation-delay: 300ms; }
+.animate-row:nth-child(12) { animation-delay: 330ms; }
+.animate-row:nth-child(13) { animation-delay: 360ms; }
+.animate-row:nth-child(14) { animation-delay: 390ms; }
+.animate-row:nth-child(15) { animation-delay: 420ms; }
+.animate-row:nth-child(16) { animation-delay: 450ms; }
+.animate-row:nth-child(17) { animation-delay: 480ms; }
+.animate-row:nth-child(18) { animation-delay: 510ms; }
+.animate-row:nth-child(19) { animation-delay: 540ms; }
+.animate-row:nth-child(20) { animation-delay: 570ms; }
+
+/* Staggered list items */
+.animate-list-item {
+  animation: fade-up 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+  opacity: 0;
+}
+.animate-list-item:nth-child(1)  { animation-delay: 0ms; }
+.animate-list-item:nth-child(2)  { animation-delay: 40ms; }
+.animate-list-item:nth-child(3)  { animation-delay: 80ms; }
+.animate-list-item:nth-child(4)  { animation-delay: 120ms; }
+.animate-list-item:nth-child(5)  { animation-delay: 160ms; }
+.animate-list-item:nth-child(6)  { animation-delay: 200ms; }
+.animate-list-item:nth-child(7)  { animation-delay: 240ms; }
+.animate-list-item:nth-child(8)  { animation-delay: 280ms; }
+.animate-list-item:nth-child(9)  { animation-delay: 320ms; }
+.animate-list-item:nth-child(10) { animation-delay: 360ms; }
+
+/* Sidebar nav item hover slide */
+.nav-item-animated {
+  transition: transform 0.2s ease, background 0.2s ease;
+}
+.nav-item-animated:hover {
+  transform: translateX(2px);
+}
+
+/* Status badge pulse for critical states */
+.badge-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Page crossfade for pagination */
+.page-crossfade-enter {
+  animation: fade-in 0.2s ease-out both;
+}
+
+/* ── Shop theme — scoped to [data-shop-theme] so it doesn't affect admin panel ── */
+[data-shop-theme] {
+  --shop-primary: 142 70% 45%;
+  --shop-secondary: 0 0% 96%;
+  --shop-accent: 0 0% 94%;
+  --shop-radius: 0.5rem;
+  --shop-font: 'Inter', sans-serif;
+
+  font-family: var(--shop-font);
+}
+
+[data-shop-theme][data-color-mode="light"] {
+  --background: 0 0% 100%;
+  --foreground: 0 0% 9%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 9%;
+  --primary: var(--shop-primary);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--shop-secondary);
+  --secondary-foreground: 0 0% 15%;
+  --muted: 0 0% 96%;
+  --muted-foreground: 0 0% 45%;
+  --accent: var(--shop-accent);
+  --accent-foreground: 0 0% 9%;
+  --border: 0 0% 90%;
+  --input: 0 0% 90%;
+  --ring: var(--shop-primary);
+  --radius: var(--shop-radius);
+  color: hsl(0 0% 9%);
+  background: hsl(0 0% 100%);
+}
+
+[data-shop-theme][data-color-mode="dark"] {
+  --background: 0 0% 4%;
+  --foreground: 0 0% 95%;
+  --card: 0 0% 7%;
+  --card-foreground: 0 0% 95%;
+  --popover: 0 0% 7%;
+  --popover-foreground: 0 0% 95%;
+  --primary: var(--shop-primary);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--shop-secondary);
+  --secondary-foreground: 0 0% 95%;
+  --muted: 0 0% 12%;
+  --muted-foreground: 0 0% 55%;
+  --accent: var(--shop-accent);
+  --accent-foreground: 0 0% 95%;
+  --border: 0 0% 18%;
+  --input: 0 0% 18%;
+  --ring: var(--shop-primary);
+  --radius: var(--shop-radius);
+  color: hsl(0 0% 95%);
+  background: hsl(0 0% 4%);
+}
+
+/* Barcode theme adaptation — uses currentColor so it follows the theme automatically */
+.barcode-themed rect:not([fill="transparent"]):not([fill="none"]),
+.barcode-themed text {
+  fill: currentColor !important;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* ── Landing page animations ── */
+.landing-gradient-bg {
+  background: linear-gradient(
+    135deg,
+    hsl(var(--background)) 0%,
+    hsl(142 70% 45% / 0.03) 25%,
+    hsl(var(--background)) 50%,
+    hsl(142 70% 45% / 0.05) 75%,
+    hsl(var(--background)) 100%
+  );
+  background-size: 400% 400%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Scroll-triggered reveal animations */
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.scroll-reveal-left {
+  opacity: 0;
+  transform: translateX(-40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scroll-reveal-left.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-reveal-right {
+  opacity: 0;
+  transform: translateX(40px);
+  transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scroll-reveal-right.revealed {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.scroll-reveal-scale {
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+              transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.scroll-reveal-scale.revealed {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* Stagger children delay via CSS custom property */
+.stagger-children > * {
+  transition-delay: calc(var(--stagger-index, 0) * 100ms);
+}
+
+/* Animated gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, hsl(142 70% 45%), hsl(142 90% 60%), hsl(170 80% 50%));
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: gradient-shift 4s ease infinite;
+}
+
+/* Glass card effect */
+.glass-card {
+  background: hsl(var(--card) / 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid hsl(var(--border) / 0.5);
+}
+
+/* Glow border on hover */
+.glow-border {
+  position: relative;
+}
+.glow-border::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, hsl(142 70% 45% / 0.3), transparent, hsl(142 70% 45% / 0.3));
+  z-index: -1;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.glow-border:hover::after {
+  opacity: 1;
+}
+
+/* ── Micro-interactions ── */
+
+/* Button press feedback */
+button:not(:disabled):active,
+[role="button"]:not(:disabled):active {
+  transform: scale(0.97);
+}
+button, [role="button"] {
+  transition: transform 0.1s ease, background-color 0.2s ease, color 0.2s ease, opacity 0.2s ease;
+}
+
+/* Input focus glow */
+input:focus, textarea:focus, select:focus {
+  box-shadow: 0 0 0 2px hsl(var(--ring) / 0.15);
+  transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+/* Tab switch transition */
+[role="tab"] {
+  transition: background-color 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* ── Highlight animation ── */
+@keyframes highlight-fade {
+  0% { background-color: hsl(var(--primary) / 0.25); }
+  100% { background-color: transparent; }
+}
+.animate-highlight {
+  animation: highlight-fade 3s ease-out;
+}
+
+/* ── Print styles ── */
+
+/* @page must be top-level (NOT nested inside @media print) for full browser support */
+@page {
+  size: A4;
+  margin: 0;
+}
+
+@media print {
+  html {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    background: #fff !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Tailwind print utilities */
+  .print\:hidden {
+    display: none !important;
+  }
+  .print\:block {
+    display: block !important;
+  }
+
+  /* Hide EVERYTHING in <body> except the print area (catches #root, Sonner
+     toaster portal, tooltip portals, etc.) */
+  body > *:not(#invoice-print-area) {
+    display: none !important;
+    height: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* #invoice-print-area is portaled directly into <body>, outside #root. */
+  #invoice-print-area {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #fff !important;
+  }
+
+  /* Override inline max-width on template root div */
+  #invoice-print-area > div {
+    max-width: none !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Page break control */
+  #invoice-print-area table {
+    page-break-inside: auto;
+  }
+  #invoice-print-area tr {
+    page-break-inside: avoid;
+    break-inside: avoid;
+  }
+  #invoice-print-area thead {
+    break-inside: avoid;
+  }
+}

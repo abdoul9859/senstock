@@ -1,0 +1,41 @@
+{
+  "expo": {
+    "name": "StockFlow",
+    "slug": "stockflow",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "scheme": "stockflow",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0a0a0a"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.stockflow.app"
+    },
+    "android": {
+      "package": "com.stockflow.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0a0a0a",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "backgroundColor": "#0a0a0a",
+      "themeColor": "#0a0a0a",
+      "name": "StockFlow",
+      "shortName": "StockFlow"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font"
+    ]
+  }
+}

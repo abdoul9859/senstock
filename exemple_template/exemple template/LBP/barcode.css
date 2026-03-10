@@ -1,0 +1,281 @@
+/* === STYLES POUR LES CODES-BARRES === */
+
+/* Container principal du code-barres */
+.barcode {
+    display: inline-block;
+    margin: 5px 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+}
+
+/* Zone des barres */
+.barcode-bars {
+    position: relative;
+    background: white;
+    width: 100%;
+}
+
+/* Barres individuelles (tirets noirs) */
+.barcode-bar {
+    position: absolute;
+    background-color: #000000; /* Tirets noirs */
+    top: 0;
+    border-radius: 0;
+    transition: background-color 0.2s ease;
+}
+
+.barcode-bar:hover {
+    background-color: #333333;
+}
+
+/* Texte du code-barres */
+.barcode-text {
+    font-weight: 600;
+    color: #2c3e50;
+    text-align: center;
+    font-family: 'Courier New', Consolas, monospace;
+    background: white;
+    padding: 4px 8px;
+    margin: 0;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    user-select: none;
+    border-top: 1px solid #eee;
+}
+
+/* Container pour centrer les codes-barres */
+.barcode-container {
+    text-align: center;
+    margin: 10px 0;
+    padding: 5px;
+}
+
+/* Variantes de taille */
+.barcode-tiny {
+    transform: scale(0.6);
+    transform-origin: center;
+}
+
+.barcode-small {
+    transform: scale(0.8);
+    transform-origin: center;
+}
+
+.barcode-medium {
+    transform: scale(1);
+    transform-origin: center;
+}
+
+.barcode-large {
+    transform: scale(1.3);
+    transform-origin: center;
+}
+
+.barcode-huge {
+    transform: scale(1.6);
+    transform-origin: center;
+}
+
+/* Styles pour les produits dans la liste */
+.product-barcode {
+    margin: 8px auto;
+    max-width: 180px;
+}
+
+.product-barcode .barcode-text {
+    font-size: 10px;
+    padding: 2px 4px;
+}
+
+/* Styles pour la page de détail */
+.product-detail-barcode {
+    margin: 15px auto;
+    max-width: 250px;
+}
+
+.product-detail-barcode .barcode-text {
+    font-size: 12px;
+    padding: 6px 8px;
+    font-weight: bold;
+}
+
+/* Styles pour impression */
+@media print {
+    .barcode {
+        border: 2px solid #000;
+        box-shadow: none;
+        margin: 10px 0;
+    }
+    
+    .barcode-bar {
+        background-color: #000 !important;
+    }
+    
+    .barcode-text {
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+}
+
+/* Styles pour cartes de produits */
+.product-card .barcode {
+    margin: 5px auto;
+    max-width: 160px;
+}
+
+.product-card .barcode-bars {
+    height: 30px;
+}
+
+.product-card .barcode-text {
+    font-size: 9px;
+    padding: 2px;
+}
+
+/* Animation d'apparition */
+.barcode {
+    opacity: 0;
+    animation: fadeInBarcode 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeInBarcode {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Styles pour les codes-barres dans les formulaires */
+.form-barcode-preview {
+    padding: 15px;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    margin: 10px 0;
+}
+
+.form-barcode-preview .barcode {
+    margin: 10px auto;
+    display: block;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+    .barcode {
+        max-width: 140px;
+        margin: 5px auto;
+    }
+    
+    .barcode-text {
+        font-size: 9px;
+        padding: 2px 4px;
+    }
+    
+    .product-detail-barcode {
+        max-width: 200px;
+    }
+    
+    .barcode-large,
+    .barcode-huge {
+        transform: scale(1.1);
+    }
+}
+
+@media (max-width: 480px) {
+    .barcode {
+        max-width: 120px;
+    }
+    
+    .barcode-text {
+        font-size: 8px;
+        padding: 1px 2px;
+    }
+    
+    .barcode-large,
+    .barcode-huge {
+        transform: scale(1);
+    }
+}
+
+/* Styles pour les tooltips de codes-barres */
+.barcode-tooltip {
+    position: relative;
+    cursor: pointer;
+}
+
+.barcode-tooltip:hover::after {
+    content: "Code-barres: " attr(data-barcode-value);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: white;
+    padding: 5px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-in-out forwards;
+}
+
+/* Classes utilitaires */
+.barcode-inline {
+    display: inline-block;
+    vertical-align: middle;
+    margin: 0 5px;
+}
+
+.barcode-block {
+    display: block;
+    margin: 10px auto;
+}
+
+.barcode-left {
+    float: left;
+    margin-right: 10px;
+}
+
+.barcode-right {
+    float: right;
+    margin-left: 10px;
+}
+
+.barcode-no-text .barcode-text {
+    display: none;
+}
+
+.barcode-bold-text .barcode-text {
+    font-weight: bold;
+    font-size: 12px;
+}
+
+/* Styles pour les barres plus épaisses */
+.barcode-thick .barcode-bar {
+    min-width: 2px;
+}
+
+.barcode-thin .barcode-bar {
+    max-width: 1px;
+}
+
+/* Couleurs alternatives */
+.barcode-blue .barcode-bar {
+    background-color: #0d6efd;
+}
+
+.barcode-green .barcode-bar {
+    background-color: #198754;
+}
+
+.barcode-red .barcode-bar {
+    background-color: #dc3545;
+}

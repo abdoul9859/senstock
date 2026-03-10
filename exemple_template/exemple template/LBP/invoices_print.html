@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="fr" style="margin: 0; padding: 0; width: 100%; height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Facture {{ invoice.invoice_number }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #ecf0f1;
+            --bg-light: #f8f9fa;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --lbp-primary: #0070c0;
+            --lbp-secondary: #004d8a;
+            --lbp-accent: #0090e3;
+            --lbp-light: #e6f2ff;
+            --lbp-gradient: linear-gradient(135deg, #0070c0 0%, #004d8a 100%);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            min-height: 100vh !important;
+            background-color: #f5f5f5;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            font-size: 11pt;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .page-controls {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .page-controls .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .page-controls .btn i {
+            font-size: 16px;
+        }
+        
+        .page-controls .btn-print {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .page-controls .btn-download {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+        }
+        
+        .page-controls .btn-return {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+        }
+        
+        .page-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 0 0;
+            min-height: 100vh;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Styles spécifiques pour l'impression */
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+            }
+            
+            .page-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 210mm;
+                height: 297mm;
+            }
+            
+            #invoice-container {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                transform: none !important;
+            }
+        }
+        
+        .container {
+            width: 210mm !important; /* Taille A4 exacte en mm */
+            max-width: 210mm !important;
+            height: 297mm !important; /* Hauteur A4 fixe */
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #fff !important;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform-origin: top center;
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        @media print {
+            @page {
+                margin: 0;
+                size: 210mm 297mm;
+                margin-bottom: 0;
+            }
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                min-height: 100vh;
+                display: block !important;
+                background-color: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .page-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+            }
+            .container {
+                width: 210mm !important;
+                max-width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                background-color: #fff !important;
+                box-shadow: none !important;
+                box-sizing: border-box !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .header {
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .footer {
+                margin-top: auto;
+                position: relative;
+                width: 100%;
+                page-break-inside: avoid !important;
+                page-break-before: auto !important;
+            }
+            .content-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .products-header {
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color: #333 !important;
+            }
+            .billing-info {
+                background-color: white !important;
+            }
+            .payment-info {
+                background: #f8f9fa !important;
+            }
+        }
+        
+        html {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            line-height: 1.5;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 10pt;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            width: 800px !important;
+            max-width: 800px !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background-color: #fff !important;
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: 100vh !important;
+        }
+        
+        /* En-tête de facture - Style minimaliste et professionnel */
+        .header {
+            background: white;
+            padding: 30px 40px 25px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: center;
+        }
+        
+        .logo-container {
+            width: 150px;
+            height: 150px;
+            margin-right: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo {
+            max-width: 150px;
+            max-height: 150px;
+            object-fit: contain;
+        }
+        
+        .company-info h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+            padding: 0;
+            color: var(--primary-color);
+            letter-spacing: -0.5px;
+        }
+        
+        .company-info h2 {
+            font-size: 16px;
+            font-weight: 400;
+            margin: 4px 0 8px 0;
+            padding: 0;
+            color: var(--text-secondary);
+        }
+        
+        .company-info p {
+            font-size: 13px;
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .invoice-info {
+            text-align: right;
+        }
+        
+        .invoice-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: var(--text-secondary);
+            margin: 0 0 10px 0;
+            letter-spacing: -1px;
+        }
+        
+        .invoice-number {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0 0 15px 0;
+        }
+        
+        .invoice-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Section client et paiement - Style minimaliste */
+        .billing-info {
+            display: flex;
+            padding: 20px 30px;
+            gap: 30px;
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            margin: 0 25px;
+        }
+        
+        .client-section, .payment-section {
+            flex: 1;
+        }
+        
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 8px;
+            display: inline-block;
+        }
+        
+        .client-details {
+            padding-left: 10px;
+        }
+        
+        .client-details p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .client-details strong {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+        
+        .payment-info {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .payment-method-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .payment-method-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        h3 {
+            color: var(--lbp-primary);
+            border-bottom: 2px solid var(--lbp-accent);
+            padding-bottom: 5px;
+        }
+
+        /* Section des produits - Style tableau minimaliste */
+        .products-section {
+            flex: 1; /* Changé pour occuper tout l'espace disponible */
+            display: flex;
+            flex-direction: column;
+            min-height: 400px; /* Hauteur minimum augmentée */
+            width: calc(100% - 80px);
+            margin: 20px 40px 0;
+            background: white;
+            border-radius: 0;
+            overflow: hidden;
+        }
+        
+        .products-header {
+            display: flex;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            text-transform: uppercase;
+            border: 1px solid #ddd;
+            border-bottom: 2px solid #333;
+        }
+        
+        .product-col {
+            flex: 2;
+            text-align: left;
+        }
+        
+        .qty-col, .price-col, .total-col {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .product-rows-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        
+        .product-row {
+            display: flex;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e5e5;
+            align-items: flex-start;
+            min-height: 50px;
+        }
+        
+        .product-row:last-child {
+            border-bottom: none;
+        }
+        
+        .product-name {
+            flex: 2;
+            text-align: left;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-primary);
+            padding-right: 20px;
+        }
+        
+        .product-qty, .product-price, .product-total {
+            flex: 1;
+            text-align: center;
+            font-size: 13px;
+            padding: 0 10px;
+        }
+        
+        .product-qty {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        .product-price {
+            color: var(--primary-color);
+            font-weight: 600;
+            text-align: right;
+        }
+
+        .product-total {
+            color: var(--primary-color);
+            font-weight: 700;
+            text-align: right;
+        }
+
+        /* Section des totaux - Style minimaliste */
+        .totals {
+            text-align: right;
+            margin: 15px 25px 0;
+            font-size: 12px;
+            padding-top: 15px;
+        }
+        
+        .totals-row {
+            display: flex;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        
+        .totals-row.grand-total {
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid #eee;
+        }
+        
+        .totals-label {
+            margin-right: 15px;
+            font-weight: 500;
+            color: #555;
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .totals-value {
+            min-width: 120px;
+            text-align: right;
+            font-weight: 600;
+            color: var(--lbp-primary);
+        }
+        
+        .totals-row.grand-total .totals-label {
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .totals-row.grand-total .totals-value {
+            font-weight: 700;
+            color: var(--lbp-primary);
+            font-size: 15px;
+        }
+
+        /* Pied de page - Style sobre et professionnel */
+        .footer {
+            padding: 20px 40px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 11px;
+            width: 100%;
+            position: relative;
+            page-break-inside: avoid;
+            margin-top: auto;
+            background: #f8f9fa;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .footer-section {
+            flex: 1;
+            margin: 0 15px;
+        }
+        
+        .footer-section h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .footer-section p {
+            margin: 3px 0;
+            color: #666;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        
+        .footer-section i {
+            color: #0070c0;
+            margin-right: 5px;
+            font-size: 11px;
+            width: 14px;
+            text-align: center;
+        }
+        
+        
+        .divider {
+            display: none;
+        }
+        
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-bottom: 200px; /* Espace réservé pour le footer */
+        }
+        
+        .page-footer-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            page-break-inside: avoid;
+        }
+        
+        /* Style spécifique pour les produits échangés */
+        .exchange-row {
+            background-color: var(--lbp-light);
+            border-left: 2px solid var(--lbp-primary);
+        }
+        
+        /* Styles pour la capture PDF */
+        #invoice-container {
+            background-color: #ffffff !important;
+            color: #333333 !important;
+            font-family: 'Nunito', 'Segoe UI', sans-serif !important;
+        }
+        
+        @media print {
+            .footer {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 15px 30px !important;
+                margin-top: auto !important;
+            }
+            
+            .footer-section p {
+                font-size: 10px !important;
+                line-height: 1.3 !important;
+            }
+            
+            .footer-section h4 {
+                font-size: 11px !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Contrôles de la page -->
+    <div class="page-controls no-print">
+        <button id="printBtn" class="btn btn-print">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+        <button id="downloadBtn" class="btn btn-download">
+            <i class="fas fa-download"></i> Télécharger PDF
+        </button>
+        <button id="returnBtn" class="btn btn-return">
+            <i class="fas fa-arrow-left"></i> Retour
+        </button>
+    </div>
+    
+    <div class="page-container">
+    <div id="invoice-container" class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo-container">
+                    {% if settings and settings.logo_path %}
+                    <img src="{{ settings.logo_path }}" alt="Logo" class="logo" onerror="this.src='/static/img/lbp_logo_20250430215946.png'; this.onerror=null;">
+                    {% else %}
+                    <img src="/static/img/lbp_logo_20250430215946.png" alt="Logo LOUCAR BUSINESS PRO" class="logo" onerror="this.style.display='none'; document.getElementById('logo-fallback').style.display='flex';">
+                    <div id="logo-fallback" style="width: 60px; height: 60px; background-color: var(--primary-color); border-radius: 8px; display: none; align-items: center; justify-content: center;">
+                        <span style="color: white; font-weight: bold; font-size: 24px;">LBP</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="company-info">
+                    <h1>{{ settings.company_name if settings and settings.company_name else 'LOUCAR BUSINESS PRO' }}</h1>
+                    <h2>Technologie & Électronique</h2>
+                    <p>{{ settings.address if settings and settings.address else 'Ouest Foire, Dakar - Sénégal' }}<br>
+                    RC: {{ settings.rc_number if settings and settings.rc_number else 'SN-DKR-2024.A.22321' }} | NINEA: {{ settings.ninea_number if settings and settings.ninea_number else '011280427-1D1' }}</p>
+                </div>
+            </div>
+            <div class="invoice-info">
+                <h2 class="invoice-title">FACTURE</h2>
+                <p class="invoice-number">#{{ invoice.invoice_number }}</p>
+                <p class="invoice-date">Date: {{ invoice.invoice_date.strftime('%d/%m/%Y') }}</p>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <!-- Billing Information -->
+            <div class="billing-info">
+                <div class="client-section">
+                    <h3 class="section-title">Facturé à</h3>
+                    <div class="client-details">
+                        {% if invoice.customer %}
+                        <p><strong>{{ invoice.customer.name }}</strong></p>
+                        <p>{{ invoice.customer.address or 'Adresse non renseignée' }}</p>
+                        <p>{{ invoice.customer.phone|formatPhoneNumber }}</p>
+                        {% if invoice.customer.email %}
+                        <p>{{ invoice.customer.email }}</p>
+                        {% endif %}
+                        {% else %}
+                        <p><strong>Client occasionnel</strong></p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="payment-section">
+                    <h3 class="section-title">Méthode de paiement</h3>
+                    <div class="payment-info">
+                        <p class="payment-method-label">Paiement par:</p>
+                        <p class="payment-method-value">{{ invoice.payment_method or 'Non spécifié' }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Products Section -->
+            <div class="products-section">
+                <div class="products-header">
+                    <div class="product-col">NOM</div>
+                    <div class="qty-col">QUANTITÉ</div>
+                    {% if invoice.invoice_type != 'Échange' or not invoice.trade %}
+                    <div class="price-col">PRIX</div>
+                    <div class="total-col">TOTAL</div>
+                    {% endif %}
+                </div>
+
+                <div class="product-rows-container">
+                    {% for item in invoice_items %}
+                    <div class="product-row">
+                        <div class="product-name">
+                            {% if "IMEI:" in item.product.name %}
+                                {% set parts = item.product.name.split("IMEI:") %}
+                                {{ parts[0] }}
+                                <span style="color: #0070c0; font-weight: 600;">IMEI:</span> 
+                                {% set imei_raw = parts[1].strip() %}
+                                {{ imei_raw|format_imei }}
+                            {% else %}
+                                {{ item.product.name }}
+                            {% endif %}
+                            {% if item.imei %}
+                                {% if ',' in item.imei %}
+                                    <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                        <span style="color: #0070c0; font-weight: 600;">IMEIs:</span>
+                                    </div>
+                                    {% for single_imei in item.imei.split(',') %}
+                                        {% if single_imei|trim %}
+                                        <div style="font-size: 11px; font-weight: 500; margin-top: 2px; margin-left: 10px; color: #666;">
+                                            <span style="color: #0070c0; font-weight: 600;">-</span> {{ single_imei|trim|format_imei }}
+                                        </div>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                        <span style="color: #0070c0; font-weight: 600;">IMEI:</span> {{ item.imei|format_imei }}
+                                    </div>
+                                {% endif %}
+                            {% endif %}
+                            {% if item.storage_size %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">Stockage:</span> {{ item.storage_size }}
+                                </div>
+                            {% endif %}
+                            {% if item.color %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">Couleur:</span> {{ item.color }}
+                                </div>
+                            {% endif %}
+                            {% if item.battery_level %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">Batterie:</span> {{ item.battery_level }}%
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="product-qty">{{ item.quantity }}</div>
+                        {% if invoice.invoice_type != 'Échange' or not invoice.trade %}
+                        <div class="product-price">
+                            {{ item.unit_price|format_number }} FCFA
+                        </div>
+                        <div class="product-total">
+                            {{ (item.quantity * item.unit_price)|format_number }} FCFA
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                    
+                    {% if invoice.invoice_type == 'Échange' and invoice.trade %}
+                    <!-- Lignes pour les appareils échangés -->
+                    {% if invoice.trade.items and invoice.trade.items|length > 0 %}
+                        {% for item in invoice.trade.items %}
+                        <div class="product-row exchange-row">
+                            <div class="product-name" style="flex: 4;">
+                                <span style="color: #0070c0; font-weight: 600;">Reprise {{ loop.index }}:</span> {{ item.product_name }}
+                                {% if item.imei %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">IMEI:</span> {{ item.imei|format_imei }}
+                                </div>
+                                {% endif %}
+                                {% if item.storage_size %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">Stockage:</span> {{ item.storage_size }}
+                                </div>
+                                {% endif %}
+                                {% if item.color %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">Couleur:</span> {{ item.color }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="product-qty">&nbsp;</div>
+                            <div class="product-price">&nbsp;</div>
+                            <div class="product-total">&nbsp;</div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <!-- Legacy single trade item -->
+                        <div class="product-row exchange-row">
+                            <div class="product-name" style="flex: 4;">
+                                <span style="color: #0070c0; font-weight: 600;">Reprise:</span> {{ invoice.trade.traded_product_name }}
+                                {% if invoice.trade.imei %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">IMEI:</span> {{ invoice.trade.imei|format_imei }}
+                                </div>
+                                {% endif %}
+                                {% if invoice.trade.storage_size %}
+                                <div style="font-size: 11px; font-weight: 500; margin-top: 3px; color: #666;">
+                                    <span style="color: #0070c0; font-weight: 600;">Stockage:</span> {{ invoice.trade.storage_size }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="product-qty">&nbsp;</div>
+                            <div class="product-price">&nbsp;</div>
+                            <div class="product-total">&nbsp;</div>
+                        </div>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Footer Container -->
+        <div class="page-footer-container">
+            {% if invoice.is_signed and settings and settings.signature_path %}
+            <div style="display:flex; justify-content:flex-end; margin: 0 100px 10px;">
+                <div style="text-align:center;">
+                    <div style="font-size:12px; color:#666; margin-bottom:6px;">Signature</div>
+                    <img src="{{ settings.signature_path }}" alt="Signature" style="max-height: 140px; max-width: 300px; object-fit: contain;">
+                </div>
+            </div>
+            {% endif %}
+            <!-- Totaux -->
+            <div class="totals">
+                {% if invoice.invoice_type == 'Échange' and invoice.trade %}
+                <div class="totals-row grand-total">
+                    <div class="totals-label">Total à payer:</div>
+                    <div class="totals-value">
+                        {{ [(invoice.total_amount - invoice.trade.total_traded_amount), 0]|max|format_number }} FCFA
+                    </div>
+                </div>
+                {% else %}
+                {% if invoice.tax_rate %}
+                <div class="totals-row">
+                    <div class="totals-label">TVA ({{ invoice.tax_rate }}%):</div>
+                    <div class="totals-value">
+                        {{ (invoice.total_amount * invoice.tax_rate / 100)|format_number }} FCFA
+                    </div>
+                </div>
+                <div class="totals-row grand-total">
+                    <div class="totals-label">Total TTC:</div>
+                    <div class="totals-value">
+                        {{ (invoice.total_amount * (1 + invoice.tax_rate / 100))|format_number }} FCFA
+                    </div>
+                </div>
+                {% else %}
+                <div class="totals-row grand-total">
+                    <div class="totals-label">Total:</div>
+                    <div class="totals-value">
+                        {{ invoice.total_amount|format_number }} FCFA
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+                
+                {% if invoice.status == 'Partiellement payée' %}
+                <div class="totals-row">
+                    <div class="totals-label">Montant déjà payé:</div>
+                    <div class="totals-value">
+                        {{ invoice.paid_amount|format_number }} FCFA
+                    </div>
+                </div>
+                <div class="totals-row grand-total">
+                    <div class="totals-label">Reste à payer:</div>
+                    <div class="totals-value">
+                        {{ invoice.balance_due|format_number }} FCFA
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-content">
+                    <!-- Section Adresse -->
+                    <div class="footer-section">
+                        <h4>Adresse</h4>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ settings.address if settings and settings.address else 'Ouest Foire, Dakar - Sénégal' }}</p>
+                        <p><i class="fas fa-envelope"></i> {{ settings.email if settings and settings.email else 'loucarbusinesspro@gmail.com' }}</p>
+                    </div>
+                    
+                    <!-- Section Contact -->
+                    <div class="footer-section">
+                        <h4>Contact</h4>
+                        <p><i class="fas fa-phone"></i> {{ settings.phone if settings and settings.phone else '77 879 7474' }}</p>
+                        {% if settings and settings.phone2 %}
+                        <p><i class="fas fa-phone"></i> {{ settings.phone2 }}</p>
+                        {% endif %}
+                        {% if settings and settings.whatsapp %}
+                        <p><i class="fab fa-whatsapp"></i> {{ settings.whatsapp }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Section Réseaux sociaux -->
+                    <div class="footer-section">
+                        <h4>Suivez-nous</h4>
+                        {% if settings and settings.instagram %}
+                        <p><i class="fab fa-instagram"></i> @{{ settings.instagram }}</p>
+                        {% endif %}
+                        {% if settings and settings.website %}
+                        <p><i class="fas fa-globe"></i> {{ settings.website }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Section Informations légales -->
+                    <div class="footer-section">
+                        <h4>Informations légales</h4>
+                        <p>RC: {{ settings.rc_number if settings and settings.rc_number else 'SN-DKR-2024.A.22321' }}</p>
+                        <p>NINEA: {{ settings.ninea_number if settings and settings.ninea_number else '011280427-1D1' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Scripts pour html2canvas et jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        window.onload = function() {
+            // Récupérer les éléments
+            const printBtn = document.getElementById('printBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const returnBtn = document.getElementById('returnBtn');
+            const invoiceElement = document.getElementById('invoice-container');
+            
+            // Fonction pour imprimer
+            printBtn.addEventListener('click', function() {
+                window.print();
+            });
+            
+            // Fonction pour télécharger en PDF
+            downloadBtn.addEventListener('click', function() {
+                // Afficher un indicateur de chargement
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...'; 
+                this.disabled = true;
+                
+                // Masquer les contrôles pendant la capture
+                const pageControls = document.querySelector('.page-controls');
+                if (pageControls) {
+                    pageControls.style.display = 'none';
+                }
+                
+                // Préparer le conteneur pour la capture
+                invoiceElement.style.margin = '0';
+                invoiceElement.style.padding = '0';
+                invoiceElement.style.width = '210mm';
+                invoiceElement.style.height = 'auto'; // Laisser la hauteur s'adapter au contenu
+                invoiceElement.style.boxSizing = 'border-box';
+                
+                // Attendre que tous les styles soient appliqués
+                setTimeout(() => {
+                    // Utiliser html2canvas pour capturer la facture
+                    html2canvas(invoiceElement, {
+                        scale: 2, // Meilleure qualité
+                        useCORS: true,
+                        logging: false,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        windowWidth: 210 * 3.78,
+                        windowHeight: invoiceElement.scrollHeight
+                    }).then(function(canvas) {
+                        // Vérifier que le canvas n'est pas vide
+                        if (canvas.width === 0 || canvas.height === 0) {
+                            alert('Erreur: Impossible de capturer le contenu de la facture');
+                            return;
+                        }
+                        
+                        // Créer le PDF avec jsPDF
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        
+                        // Dimensions de la page A4 en mm
+                        const pageWidth = 210;
+                        const pageHeight = 297;
+                        
+                        // Calculer les dimensions de l'image pour qu'elle s'adapte à la page
+                        const imgWidth = pageWidth - 10; // Marges de 5mm de chaque côté
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        // Si l'image est plus haute que la page, ajuster l'échelle
+                        let finalWidth = imgWidth;
+                        let finalHeight = imgHeight;
+                        
+                        if (imgHeight > pageHeight - 10) {
+                            const ratio = (pageHeight - 10) / imgHeight;
+                            finalHeight = pageHeight - 10;
+                            finalWidth = imgWidth * ratio;
+                        }
+                        
+                        // Centrer l'image sur la page
+                        const x = (pageWidth - finalWidth) / 2;
+                        const y = 5; // Marge supérieure de 5mm
+                        
+                        // Ajouter l'image au PDF
+                        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
+                        
+                        // Télécharger le PDF
+                        pdf.save('facture-{{ invoice.invoice_number }}.pdf');
+                        
+                        // Réinitialiser le bouton
+                        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger PDF';
+                        downloadBtn.disabled = false;
+                        
+                        // Réafficher les contrôles
+                        if (pageControls) {
+                            pageControls.style.display = 'flex';
+                        }
+                    }).catch(function(error) {
+                        console.error('Erreur lors de la génération du PDF:', error);
+                        alert('Erreur lors de la génération du PDF: ' + error.message);
+                        
+                        // Réinitialiser le bouton en cas d'erreur
+                        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger PDF';
+                        downloadBtn.disabled = false;
+                        
+                        // Réafficher les contrôles
+                        if (pageControls) {
+                            pageControls.style.display = 'flex';
+                        }
+                    });
+                }, 500); // Délai pour s'assurer que tout est rendu
+            });
+            
+            // Fonction pour retourner à la page de détail du devis
+            returnBtn.addEventListener('click', function() {
+                window.location.href = '/invoices/{{ invoice.id }}';
+            });
+        };
+    </script>
+</body>
+</html> 

@@ -1,0 +1,211 @@
+{% extends "layout.html" %}
+
+{% block title %}Impression de caisse{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapport de caisse #{{ register.id }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            font-size: 12px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+        .header p {
+            margin: 5px 0;
+        }
+        .section {
+            margin-bottom: 20px;
+        }
+        .section h2 {
+            font-size: 14px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 10px;
+        }
+        th, td {
+            padding: 5px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        .amount {
+            text-align: right;
+        }
+        .total {
+            font-weight: bold;
+        }
+        .footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+        }
+        .signature {
+            margin-top: 50px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .signature-box {
+            width: 45%;
+        }
+        .signature-line {
+            border-top: 1px solid #000;
+            margin-top: 50px;
+            padding-top: 5px;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 15px;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>RAPPORT DE CAISSE #{{ register.id }}</h1>
+        <p>{{ business_name }}</p>
+        <p>{{ business_address }}</p>
+        <p>Tel: {{ business_phone }}</p>
+    </div>
+
+    <div class="section">
+        <h2>Informations générales</h2>
+        <table>
+            <tr>
+                <th>Date d'ouverture:</th>
+                <td>{{ register.opening_date.strftime('%d/%m/%Y à %H:%M') }}</td>
+                <th>Ouvert par:</th>
+                <td>{{ register.opened_by.full_name }}</td>
+            </tr>
+            {% if register.status.value != "Ouverte" %}
+            <tr>
+                <th>Date de fermeture:</th>
+                <td>{{ register.closing_date.strftime('%d/%m/%Y à %H:%M') }}</td>
+                <th>Fermé par:</th>
+                <td>{{ register.closed_by.full_name }}</td>
+            </tr>
+            {% endif %}
+            <tr>
+                <th>Statut:</th>
+                <td colspan="3">{{ register.status.value }}</td>
+            </tr>
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Soldes</h2>
+        <table>
+            <tr>
+                <th>Solde d'ouverture:</th>
+                <td class="amount">{{ "{:,.2f}".format(register.opening_balance) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Total des ventes:</th>
+                <td class="amount">{{ "{:,.2f}".format(register.total_sales) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Solde attendu:</th>
+                <td class="amount">{{ "{:,.2f}".format(register.expected_closing_balance) }} FCFA</td>
+            </tr>
+            {% if register.status.value != "Ouverte" %}
+            <tr>
+                <th>Solde réel:</th>
+                <td class="amount">{{ "{:,.2f}".format(register.actual_closing_balance) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Différence:</th>
+                <td class="amount">
+                    {% if register.difference > 0 %}+{% endif %}{{ "{:,.2f}".format(register.difference) }} FCFA
+                </td>
+            </tr>
+            {% endif %}
+        </table>
+    </div>
+
+    <div class="section">
+        <h2>Détail des ventes par méthode de paiement</h2>
+        <table>
+            <tr>
+                <th>Espèces</th>
+                <td class="amount">{{ "{:,.2f}".format(register.cash_sales) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Carte</th>
+                <td class="amount">{{ "{:,.2f}".format(register.card_sales) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Mobile Money</th>
+                <td class="amount">{{ "{:,.2f}".format(register.mobile_money_sales) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Orange Money</th>
+                <td class="amount">{{ "{:,.2f}".format(register.orange_money_sales) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Wave</th>
+                <td class="amount">{{ "{:,.2f}".format(register.wave_sales) }} FCFA</td>
+            </tr>
+            <tr>
+                <th>Autres</th>
+                <td class="amount">{{ "{:,.2f}".format(register.other_sales) }} FCFA</td>
+            </tr>
+            <tr class="total">
+                <th>TOTAL</th>
+                <td class="amount">{{ "{:,.2f}".format(register.total_sales) }} FCFA</td>
+            </tr>
+        </table>
+    </div>
+
+    {% if register.notes %}
+    <div class="section">
+        <h2>Notes</h2>
+        <p>{{ register.notes|nl2br }}</p>
+    </div>
+    {% endif %}
+
+    {% if register.status.value != "Ouverte" %}
+    <div class="signature">
+        <div class="signature-box">
+            <div class="signature-line">
+                Signature du caissier
+            </div>
+        </div>
+        <div class="signature-box">
+            <div class="signature-line">
+                Signature du responsable
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="footer">
+        Document généré le {{ current_datetime.strftime('%d/%m/%Y à %H:%M') }}
+    </div>
+
+    <div class="no-print" style="margin-top: 20px; text-align: center;">
+        <button onclick="window.print()">Imprimer</button>
+        <button onclick="window.close()">Fermer</button>
+    </div>
+</body>
+</html>
+{% endblock %}

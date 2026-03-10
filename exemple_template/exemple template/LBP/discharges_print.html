@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Décharge</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        @media print {
+            .no-print {
+                display: none;
+            }
+        }
+        body {
+            margin: 3rem;
+        }
+        .signature {
+            height: 80px;
+            border-bottom: 1px solid #000;
+            margin-top: 60px;
+        }
+    </style>
+</head>
+<body>
+    <h2 class="text-center mb-4">DÉCHARGE</h2>
+
+    <div class="mb-3">
+        <label class="form-label fw-bold">N° Carte d'identité du bénéficiaire</label>
+        <input type="text" id="ci_benef" class="form-control w-50 no-print-hide" placeholder="Numéro CI...">
+    </div>
+    <div class="form-check mb-4 no-print-hide">
+        <input class="form-check-input" type="checkbox" id="addWitness">
+        <label class="form-check-label" for="addWitness">Ajouter un témoin</label>
+    </div>
+    <div id="witnessFields" class="mb-4 no-print-hide" style="display:none;">
+        <label class="form-label fw-bold">N° Carte d'identité du témoin</label>
+        <input type="text" id="ci_witness" class="form-control w-50" placeholder="Numéro CI du témoin...">
+    </div>
+
+    <p>Je soussigné(e) <strong>{{ discharge.recipient_name if discharge else '________________________________' }}</strong>,
+    reconnais avoir reçu ce jour <strong>{{ discharge.discharge_date.strftime('%d/%m/%Y') if discharge else '____/____/______' }}</strong> de la société LOUCAR BUSINESS PRO les articles ou sommes décrits ci-dessous :</p>
+
+    <p><em>Description / Objet :</em></p>
+    <p style="min-height: 150px; border: 1px solid #000; padding: 10px;">
+        {{ discharge.description if discharge else '&nbsp;' }}
+    </p>
+
+    <p>Fait pour servir et valoir ce que de droit.</p>
+
+    <div class="row mt-5">
+        <div class="col-6 text-center">
+            <p>Le / La bénéficiaire</p>
+            <div class="signature"></div>
+            <p class="mt-2">Nom, Prénom et Signature</p>
+        </div>
+        <div class="col-6 text-center">
+            <p>Pour LOUCAR BUSINESS PRO</p>
+            <div class="signature"></div>
+            <p class="mt-2">Nom, Prénom et Signature</p>
+        </div>
+    </div>
+
+    <div class="text-center mt-4 no-print">
+        <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-print me-1"></i> Imprimer</button>
+        <a href="/discharges" class="btn btn-secondary">Retour</a>
+    </div>
+<script>
+    const addWitness = document.getElementById('addWitness');
+    const witnessFields = document.getElementById('witnessFields');
+    addWitness?.addEventListener('change', () => {
+        witnessFields.style.display = addWitness.checked ? 'block' : 'none';
+    });
+
+    // Avant impression, remplacer inputs par textes pour qu'ils apparaissent sur le PDF
+    function beforePrint() {
+        const ciBenef = document.getElementById('ci_benef');
+        if (ciBenef) {
+            const span = document.createElement('span');
+            span.textContent = ciBenef.value;
+            ciBenef.parentNode.replaceChild(span, ciBenef);
+        }
+        if (addWitness?.checked) {
+            const ciW = document.getElementById('ci_witness');
+            if (ciW) {
+                const spanW = document.createElement('span');
+                spanW.textContent = ciW.value;
+                ciW.parentNode.replaceChild(spanW, ciW);
+            }
+        } else {
+            witnessFields?.remove();
+        }
+        // masquer checkbox
+        addWitness?.parentNode.remove();
+    }
+    window.onbeforeprint = beforePrint;
+</script>
+</body>
+</html>

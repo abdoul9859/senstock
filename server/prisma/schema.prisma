@@ -1,0 +1,1320 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Tenant & Auth ───
+
+model Tenant {
+  id                   String   @id @default(uuid())
+  name                 String
+  domain               String?  @unique
+  plan                 String   @default("essai") // essai, premium, revendeur, entreprise
+  subscriptionStatus   String   @default("active") // active, past_due, canceled, trialing
+  stripeCustomerId     String   @default("")
+  stripeSubscriptionId String   @default("")
+  trialEndsAt          DateTime?
+  planActivatedAt      DateTime?
+  onboardingCompleted  Boolean  @default(false)
+  onboardingStep       Int      @default(0)
+  deleted              Boolean  @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  users             User[]
+  categories        Category[]
+  companySettings   CompanySettings[]
+  commerceSettings  CommerceSettings[]
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  password     String    @default("")
+  role         String    @default("admin") // admin, gerant
+  authProvider String    @default("email") // email, google, apple, magic
+  permissions  Json      @default("{}") // granular permissions for gerant role
+  avatarUrl    String?
+  magicCode    String?
+  magicCodeExp DateTime?
+  tenantId     String?
+  tenant       Tenant?   @relation(fields: [tenantId], references: [id])
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+// ─── Inventory ───
+
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @default("")
+  hasVariants Boolean  @default(false)
+  tenantId    String?
+  tenant      Tenant?  @relation(fields: [tenantId], references: [id])
+  createdBy   String?
+  deleted     Boolean  @default(false)
+  deletedAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  attributes CategoryAttribute[]
+  products   Product[]
+
+  @@index([tenantId, deleted])
+}
+
+model CategoryAttribute {
+  id         String   @id @default(uuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  name       String
+  type       String   @default("text") // text, number, select
+  options    String[] @default([])
+  required   Boolean  @default(false)
+  sortOrder  Int      @default(0)
+
+  @@index([categoryId])
+}
+
+model Product {
+  id                String   @id @default(uuid())
+  name              String
+  description       String   @default("")
+  categoryId        String
+  category          Category @relation(fields: [categoryId], references: [id])
+  brand             String   @default("")
+  model             String   @default("")
+  purchasePrice     Float?
+  costPrice         Float?
+  sellingPrice      Float?
+  notes             String   @default("")
+  supplierId        String?
+  supplier          Supplier? @relation(fields: [supplierId], references: [id])
+  image             String   @default("")
+  quantity          Int      @default(0)
+  attributes        Json     @default("{}")
+  archived          Boolean  @default(false)
+  published         Boolean  @default(false)
+  slug              String?  @unique
+  onlineDescription String   @default("")
+  onlineImages      String[] @default([])
+  onlinePrice       Float?
+  onlineMinPrice    Float?
+  onlineMaxPrice    Float?
+  onlineTags        String[] @default([])
+  onlineHighlights  String[] @default([])
+  seoTitle          String   @default("")
+  seoDescription    String   @default("")
+  featured          Boolean  @default(false)
+  barcode           String   @default("")
+  tenantId          String?
+  createdBy         String?
+  deleted           Boolean  @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  variants          Variant[]
+  invoiceItems      InvoiceItem[]
+  quoteItems        QuoteItem[]
+  deliveryItems     DeliveryItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  orderItems        OrderItem[]
+  stockMovements    StockMovement[]
+  maintenanceTickets MaintenanceTicket[]
+  arrivageItems     ArrivageItem[]
+
+  @@index([deleted])
+  @@index([categoryId])
+  @@index([tenantId, deleted])
+  @@index([barcode])
+  @@index([name])
+}
+
+model Variant {
+  id                String   @id @default(uuid())
+  productId         String
+  product           Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  serialNumber      String
+  barcode           String   @default("")
+  condition         String   @default("neuf") // neuf, venant, occasion
+  sold              Boolean  @default(false)
+  soldInvoiceId     String?
+  soldInvoiceNumber String   @default("")
+  price             Float?
+  supplierId        String?
+  supplier          Supplier? @relation(fields: [supplierId], references: [id])
+  arrivageId        String?
+  attributes        Json     @default("{}")
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([productId])
+  @@index([serialNumber])
+  @@index([arrivageId])
+}
+
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @default("")
+  email     String   @default("")
+  address   String   @default("")
+  notes     String   @default("")
+  rating    Float    @default(0) // 0-5
+  ratingCount Int    @default(0)
+  tenantId  String?
+  createdBy String?
+  deleted   Boolean  @default(false)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  products Product[]
+  variants Variant[]
+  purchaseOrders PurchaseOrder[]
+  ratings  SupplierRating[]
+  arrivages Arrivage[]
+
+  @@index([deleted])
+  @@index([tenantId, deleted])
+}
+
+model StockMovement {
+  id          String   @id @default(uuid())
+  type        String   // product_created, product_updated, etc.
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  productName String
+  details     String   @default("")
+  meta        Json     @default("{}")
+  userId      String?
+  tenantId    String?
+  createdAt   DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId])
+}
+
+// ─── Commerce ───
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String   @default("")
+  email     String   @default("")
+  address   String   @default("")
+  notes     String   @default("")
+  tenantId  String?
+  createdBy String?
+  deleted   Boolean  @default(false)
+  deletedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  invoices       Invoice[]
+  quotes         Quote[]
+  deliveryNotes  DeliveryNote[]
+  clientRequests ClientRequest[]
+  creances       Creance[]
+
+  @@index([deleted])
+  @@index([tenantId, deleted])
+  @@index([email])
+  @@index([phone])
+}
+
+model Invoice {
+  id                String   @id @default(uuid())
+  number            String   @unique
+  type              String   @default("facture") // facture, proforma, avoir, echange, vente_flash
+  status            String   @default("brouillon") // brouillon, envoyee, payee, partielle, en_retard, annulee
+  clientId          String?
+  client            Client?  @relation(fields: [clientId], references: [id])
+  date              DateTime @default(now())
+  dueDate           DateTime?
+  subtotal          Float    @default(0)
+  // Discount (invoice-level)
+  discountAmount    Float    @default(0)
+  discountReason    String   @default("")
+  showTax           Boolean  @default(false)
+  taxRate           Float    @default(18)
+  taxAmount         Float    @default(0)
+  total             Float    @default(0)
+  showItemPrices    Boolean  @default(true)
+  showSectionTotals Boolean  @default(false)
+  // Payment
+  paymentEnabled    Boolean  @default(false)
+  paymentAmount     Float    @default(0)
+  paymentMethod     String   @default("especes")
+  paymentDate       DateTime?
+  // Warranty
+  warrantyEnabled     Boolean @default(false)
+  warrantyDuration    String  @default("")
+  warrantyDescription String  @default("")
+  notes             String   @default("")
+  signature         String   @default("")
+  convertedFromId   String?
+  tenantId          String?
+  createdBy         String?
+  deleted           Boolean  @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  items           InvoiceItem[]
+  exchangeItems   ExchangeItem[]
+  paymentHistory  PaymentHistoryEntry[]
+  deliveryNotes   DeliveryNote[]
+  creances        Creance[]
+
+  @@index([deleted])
+  @@index([status])
+  @@index([clientId])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId, deleted])
+}
+
+model InvoiceItem {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  type          String   @default("product") // product, service, section
+  productId     String?
+  product       Product? @relation(fields: [productId], references: [id])
+  variantId     String?
+  description   String   @default("")
+  quantity      Int      @default(1)
+  unitPrice       Float    @default(0)
+  externalPrice   Float?
+  purchasePrice   Float    @default(0)
+  discountAmount  Float    @default(0)
+  discountReason  String   @default("")
+  total           Float    @default(0)
+  sortOrder       Int      @default(0)
+
+  @@index([invoiceId])
+}
+
+model ExchangeItem {
+  id           String   @id @default(uuid())
+  invoiceId    String
+  invoice      Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  description  String   @default("")
+  productId    String?
+  variantId    String?
+  variantLabel String   @default("")
+  price        Float    @default(0)
+  quantity     Int      @default(1)
+  notes        String   @default("")
+  addToStock   Boolean  @default(false)
+
+  @@index([invoiceId])
+}
+
+model PaymentHistoryEntry {
+  id        String   @id @default(uuid())
+  invoiceId String
+  invoice   Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  amount    Float
+  method    String   @default("especes")
+  date      DateTime @default(now())
+  note      String   @default("")
+
+  @@index([invoiceId])
+}
+
+model Quote {
+  id                String   @id @default(uuid())
+  number            String   @unique
+  status            String   @default("brouillon") // brouillon, envoyee, accepte, refuse, expire, converti
+  clientId          String?
+  client            Client?  @relation(fields: [clientId], references: [id])
+  date              DateTime @default(now())
+  validUntil        DateTime?
+  subtotal          Float    @default(0)
+  showTax           Boolean  @default(false)
+  taxRate           Float    @default(18)
+  taxAmount         Float    @default(0)
+  total             Float    @default(0)
+  showItemPrices    Boolean  @default(true)
+  showSectionTotals Boolean  @default(false)
+  notes             String   @default("")
+  signature         String   @default("")
+  convertedToInvoiceId String?
+  tenantId          String?
+  createdBy         String?
+  deleted           Boolean  @default(false)
+  deletedAt         DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  items QuoteItem[]
+
+  @@index([deleted])
+  @@index([status])
+  @@index([clientId])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId, deleted])
+}
+
+model QuoteItem {
+  id          String   @id @default(uuid())
+  quoteId     String
+  quote       Quote    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  type        String   @default("product")
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  description String   @default("")
+  quantity    Int      @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+  sortOrder   Int      @default(0)
+
+  @@index([quoteId])
+}
+
+model DeliveryNote {
+  id              String   @id @default(uuid())
+  number          String   @unique
+  status          String   @default("en_preparation") // en_preparation, expedie, livre, annule
+  invoiceId       String
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id])
+  invoiceNumber   String   @default("")
+  clientId        String?
+  client          Client?  @relation(fields: [clientId], references: [id])
+  date            DateTime @default(now())
+  deliveryDate    DateTime?
+  deliveryAddress String   @default("")
+  notes           String   @default("")
+  tenantId        String?
+  createdBy       String?
+  deleted         Boolean  @default(false)
+  deletedAt       DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  items DeliveryItem[]
+
+  @@index([deleted])
+  @@index([status])
+  @@index([invoiceId])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId, deleted])
+}
+
+model DeliveryItem {
+  id          String   @id @default(uuid())
+  noteId      String
+  note        DeliveryNote @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  type        String   @default("product")
+  productId   String?
+  product     Product? @relation(fields: [productId], references: [id])
+  description String   @default("")
+  quantity    Int      @default(1)
+  delivered   Int      @default(0)
+  sortOrder   Int      @default(0)
+
+  @@index([noteId])
+}
+
+model ClientRequest {
+  id        String   @id @default(uuid())
+  number    String   @unique
+  status    String   @default("nouvelle") // nouvelle, en_cours, terminee, annulee
+  priority  String   @default("normale") // basse, normale, haute, urgente
+  clientId  String?
+  client    Client?  @relation(fields: [clientId], references: [id])
+  date      DateTime @default(now())
+  dueDate   DateTime?
+  notes     String   @default("")
+  // convertedTo
+  convertedToType   String?  // devis, facture
+  convertedToId     String?
+  convertedToNumber String?
+  tenantId  String?
+  createdBy String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items ClientRequestItem[]
+
+  @@index([tenantId])
+}
+
+model ClientRequestItem {
+  id          String        @id @default(uuid())
+  requestId   String
+  request     ClientRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  description String
+  quantity    Int           @default(1)
+  notes       String        @default("")
+
+  @@index([requestId])
+}
+
+model Creance {
+  id            String   @id @default(uuid())
+  number        String   @unique
+  status        String   @default("en_cours") // en_cours, partielle, soldee, annulee
+  clientId      String?
+  client        Client?  @relation(fields: [clientId], references: [id])
+  invoiceId     String?
+  invoice       Invoice? @relation(fields: [invoiceId], references: [id])
+  invoiceNumber String   @default("")
+  description   String   @default("")
+  amount        Float
+  amountPaid    Float    @default(0)
+  dueDate       DateTime?
+  notes         String   @default("")
+  tenantId      String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  payments CreancePayment[]
+
+  @@index([tenantId])
+}
+
+model CreancePayment {
+  id        String   @id @default(uuid())
+  creanceId String
+  creance   Creance  @relation(fields: [creanceId], references: [id], onDelete: Cascade)
+  amount    Float
+  method    String   @default("especes")
+  date      DateTime @default(now())
+  notes     String   @default("")
+
+  @@index([creanceId])
+}
+
+// ─── Boutique / E-commerce ───
+
+model Order {
+  id             String   @id @default(uuid())
+  number         String   @unique
+  status         String   @default("nouvelle")
+  source         String   @default("boutique")
+  // Customer (embedded → flat fields)
+  customerName   String
+  customerPhone  String
+  customerEmail  String   @default("")
+  customerAddress String  @default("")
+  subtotal       Float    @default(0)
+  discount       Float    @default(0)
+  shipping       Float    @default(0)
+  total          Float    @default(0)
+  paymentMethod  String   @default("a_la_livraison")
+  paymentStatus  String   @default("en_attente")
+  promoCode      String   @default("")
+  notes          String   @default("")
+  tenantId       String?
+  createdBy      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  items OrderItem[]
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId])
+}
+
+model OrderItem {
+  id        String   @id @default(uuid())
+  orderId   String
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  name      String
+  variant   String   @default("")
+  quantity  Int
+  price     Float
+
+  @@index([orderId])
+}
+
+model Promotion {
+  id         String    @id @default(uuid())
+  code       String    @unique
+  type       String    // pourcentage, fixe
+  value      Float
+  minOrder   Float     @default(0)
+  maxUses    Int       @default(0)
+  usedCount  Int       @default(0)
+  validFrom  DateTime?
+  validUntil DateTime?
+  active     Boolean   @default(true)
+  tenantId   String?
+  createdBy  String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([tenantId])
+}
+
+model ShopSettings {
+  id                 String  @id @default("singleton")
+  tenantId           String? @unique
+  shopName           String  @default("Ma Boutique")
+  shopDescription    String  @default("Bienvenue dans notre boutique en ligne")
+  shopLogo           String  @default("")
+  shopFavicon        String  @default("")
+  heroEnabled        Boolean @default(true)
+  heroImage          String  @default("")
+  heroTitle          String  @default("Bienvenue dans notre boutique")
+  heroSubtitle       String  @default("Decouvrez nos produits de qualite")
+  heroCTAText        String  @default("Voir les produits")
+  heroCTALink        String  @default("/shop")
+  themePreset        String  @default("default")
+  primaryColor       String  @default("142 70% 45%")
+  secondaryColor     String  @default("0 0% 96%")
+  accentColor        String  @default("0 0% 94%")
+  fontFamily         String  @default("Inter")
+  borderRadius       String  @default("0.5rem")
+  colorMode          String  @default("light") // light, dark, auto
+  phone              String  @default("")
+  email              String  @default("")
+  address            String  @default("")
+  whatsapp           String  @default("")
+  // Social links
+  socialFacebook     String  @default("")
+  socialInstagram    String  @default("")
+  socialWhatsapp     String  @default("")
+  socialTiktok       String  @default("")
+  socialTwitter      String  @default("")
+  currency           String  @default(" F")
+  defaultShipping    Float   @default(0)
+  freeShippingThreshold Float @default(0)
+  taxRate            Float   @default(0)
+  // Payment methods
+  pmCashOnDelivery   Boolean @default(true)
+  pmWave             Boolean @default(false)
+  pmOrangeMoney      Boolean @default(false)
+  pmFreeMoney        Boolean @default(false)
+  pmCard             Boolean @default(false)
+  // Paydunya
+  paydunyaMasterKey  String  @default("")
+  paydunyaPrivateKey String  @default("")
+  paydunyaPublicKey  String  @default("")
+  paydunyaToken      String  @default("")
+  paydunyaMode       String  @default("test")
+  // SMTP
+  smtpHost           String  @default("")
+  smtpPort           Int     @default(587)
+  smtpUser           String  @default("")
+  smtpPass           String  @default("")
+  smtpFrom           String  @default("")
+  // Footer
+  footerText         String  @default("")
+  footerColumns      Json    @default("[]")
+  announcementEnabled Boolean @default(false)
+  announcementText   String  @default("")
+  announcementColor  String  @default("142 70% 45%")
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ─── Personnel ───
+
+model Employee {
+  id             String   @id @default(uuid())
+  firstName      String
+  lastName       String
+  phone          String
+  email          String   @default("")
+  address        String   @default("")
+  nationalId     String   @default("")
+  position       String
+  department     String   @default("")
+  hireDate       DateTime @default(now())
+  contractType   String   @default("cdi") // cdi, cdd, stage, freelance
+  baseSalary     Float    @default(0)
+  currency       String   @default("XOF")
+  status         String   @default("actif") // actif, inactif, suspendu
+  // Emergency contact
+  emergencyName     String @default("")
+  emergencyPhone    String @default("")
+  emergencyRelation String @default("")
+  notes          String   @default("")
+  tenantId       String?
+  createdBy      String?
+  deleted        Boolean  @default(false)
+  deletedAt      DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  salaries    Salary[]
+  leaves      Leave[]
+  attendances Attendance[]
+
+  @@index([deleted])
+  @@index([status])
+  @@index([lastName, firstName])
+  @@index([department])
+  @@index([tenantId, deleted])
+}
+
+model Salary {
+  id              String   @id @default(uuid())
+  number          String   @unique
+  employeeId      String
+  employee        Employee @relation(fields: [employeeId], references: [id])
+  period          String   // YYYY-MM
+  baseSalary      Float
+  totalBonuses    Float    @default(0)
+  totalDeductions Float    @default(0)
+  netSalary       Float    @default(0)
+  paymentMethod   String   @default("especes")
+  paymentDate     DateTime?
+  status          String   @default("en_attente") // en_attente, payee, annulee
+  notes           String   @default("")
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  bonuses    SalaryBonus[]
+  deductions SalaryDeduction[]
+
+  @@index([employeeId, period])
+  @@index([period])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SalaryBonus {
+  id       String @id @default(uuid())
+  salaryId String
+  salary   Salary @relation(fields: [salaryId], references: [id], onDelete: Cascade)
+  label    String
+  amount   Float  @default(0)
+
+  @@index([salaryId])
+}
+
+model SalaryDeduction {
+  id       String @id @default(uuid())
+  salaryId String
+  salary   Salary @relation(fields: [salaryId], references: [id], onDelete: Cascade)
+  label    String
+  amount   Float  @default(0)
+
+  @@index([salaryId])
+}
+
+// ─── Banque ───
+
+model BankAccount {
+  id            String   @id @default(uuid())
+  name          String
+  bankName      String   @default("")
+  accountNumber String   @default("")
+  type          String   @default("courant") // courant, epargne, mobile_money
+  currency      String   @default("FCFA")
+  balance       Float    @default(0)
+  isDefault     Boolean  @default(false)
+  notes         String   @default("")
+  tenantId      String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  transactions    BankTransaction[] @relation("AccountTransactions")
+  transfersIn     BankTransaction[] @relation("TransferTo")
+
+  @@index([createdBy])
+  @@index([tenantId])
+}
+
+model BankTransaction {
+  id           String      @id @default(uuid())
+  number       String      @unique
+  type         String      // entree, sortie, virement
+  category     String      @default("autre") // vente, salaire, fournisseur, loyer, charge, virement_interne, autre
+  amount       Float
+  description  String      @default("")
+  accountId    String
+  account      BankAccount @relation("AccountTransactions", fields: [accountId], references: [id])
+  toAccountId  String?
+  toAccount    BankAccount? @relation("TransferTo", fields: [toAccountId], references: [id])
+  date         DateTime    @default(now())
+  reference    String      @default("")
+  invoiceId    String?
+  salaryId     String?
+  reconciled   Boolean     @default(false)
+  reconciledAt DateTime?
+  notes        String      @default("")
+  tenantId     String?
+  createdBy    String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([accountId, date(sort: Desc)])
+  @@index([type])
+  @@index([reconciled])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId])
+}
+
+// ─── Logistique ───
+
+model PurchaseOrder {
+  id                   String   @id @default(uuid())
+  number               String   @unique
+  supplierId           String
+  supplier             Supplier @relation(fields: [supplierId], references: [id])
+  subtotal             Float    @default(0)
+  shipping             Float    @default(0)
+  total                Float    @default(0)
+  status               String   @default("brouillon")
+  expectedDeliveryDate DateTime?
+  actualDeliveryDate   DateTime?
+  paymentStatus        String   @default("en_attente")
+  paymentMethod        String   @default("especes")
+  notes                String   @default("")
+  tenantId             String?
+  createdBy            String?
+  deleted              Boolean  @default(false)
+  deletedAt            DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  items PurchaseOrderItem[]
+
+  @@index([deleted])
+  @@index([supplierId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([tenantId, deleted])
+}
+
+model PurchaseOrderItem {
+  id          String        @id @default(uuid())
+  orderId     String
+  order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId   String?
+  product     Product?      @relation(fields: [productId], references: [id])
+  description String
+  quantity    Int           @default(1)
+  unitPrice   Float         @default(0)
+  total       Float         @default(0)
+
+  @@index([orderId])
+}
+
+// ─── Arrivages ───
+
+model Arrivage {
+  id            String   @id @default(uuid())
+  reference     String   @unique
+  supplierId    String?
+  supplier      Supplier? @relation(fields: [supplierId], references: [id])
+  date          DateTime @default(now())
+  status        String   @default("en_cours") // en_cours, recu, annule
+  totalItems    Int      @default(0)
+  totalCost     Float    @default(0)
+  notes         String   @default("")
+  tenantId      String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items ArrivageItem[]
+
+  @@index([tenantId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([date(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+model ArrivageItem {
+  id            String    @id @default(uuid())
+  arrivageId    String
+  arrivage      Arrivage  @relation(fields: [arrivageId], references: [id], onDelete: Cascade)
+  productId     String?
+  product       Product?  @relation(fields: [productId], references: [id])
+  productName   String    @default("")
+  quantity      Int       @default(1)
+  unitCost      Float     @default(0)
+  total         Float     @default(0)
+  variantIds    String[]  @default([]) // IDs of variants created for this arrivage item
+
+  @@index([arrivageId])
+  @@index([productId])
+}
+
+// ─── Maintenance ───
+
+model MaintenanceTicket {
+  id                   String   @id @default(uuid())
+  number               String   @unique
+  productId            String?
+  product              Product? @relation(fields: [productId], references: [id])
+  variantId            String?
+  deviceName           String   @default("")
+  deviceBrand          String   @default("")
+  deviceModel          String   @default("")
+  serialNumber         String   @default("")
+  // Client (embedded → flat)
+  clientName           String
+  clientPhone          String
+  clientEmail          String   @default("")
+  issueDescription     String
+  conditionAtReception String   @default("moyen")
+  accessories          String   @default("")
+  diagnostic           String   @default("")
+  diagnosticDate       DateTime?
+  repairNotes          String   @default("")
+  laborCost            Float    @default(0)
+  estimatedCost        Float    @default(0)
+  finalCost            Float    @default(0)
+  status               String   @default("recu")
+  priority             String   @default("normale")
+  receivedDate         DateTime @default(now())
+  estimatedReturnDate  DateTime?
+  completedDate        DateTime?
+  returnedDate         DateTime?
+  paymentStatus        String   @default("en_attente")
+  amountPaid           Float    @default(0)
+  notes                String   @default("")
+  tenantId             String?
+  createdBy            String?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  partsUsed MaintenancePart[]
+
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+  @@index([clientPhone])
+  @@index([productId])
+  @@index([tenantId])
+}
+
+model MaintenancePart {
+  id       String            @id @default(uuid())
+  ticketId String
+  ticket   MaintenanceTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  name     String
+  quantity Int               @default(1)
+  unitPrice Float            @default(0)
+
+  @@index([ticketId])
+}
+
+// ─── Divers ───
+
+model DailyPurchase {
+  id            String   @id @default(uuid())
+  number        String   @unique
+  date          DateTime @default(now())
+  subtotal      Float    @default(0)
+  notes         String   @default("")
+  paymentMethod String   @default("especes")
+  category      String   @default("general")
+  supplier      String   @default("")
+  tenantId      String?
+  createdBy     String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  items DailyPurchaseItem[]
+
+  @@index([date(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([category])
+  @@index([tenantId])
+}
+
+model DailyPurchaseItem {
+  id         String        @id @default(uuid())
+  purchaseId String
+  purchase   DailyPurchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  description String
+  quantity   Int           @default(1)
+  unitPrice  Float         @default(0)
+  total      Float         @default(0)
+
+  @@index([purchaseId])
+}
+
+model CommerceSettings {
+  id                String  @id @default("singleton")
+  tenantId          String? @unique
+  tenant            Tenant? @relation(fields: [tenantId], references: [id])
+  invoiceTemplate   String  @default("lbp")
+  accentColor       String  @default("#0070c0")
+  businessName      String  @default("")
+  businessAddress   String  @default("")
+  businessPhone     String  @default("")
+  businessEmail     String  @default("")
+  businessNinea     String  @default("")
+  businessLogo      String  @default("")
+  defaultNotes      String  @default("")
+  defaultWarrantyText String @default("")
+  showPurchasePrice Boolean @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model CompanySettings {
+  id              String  @id @default("singleton")
+  tenantId        String? @unique
+  tenant          Tenant? @relation(fields: [tenantId], references: [id])
+  companyName     String  @default("")
+  logo            String  @default("")
+  address         String  @default("")
+  phone           String  @default("")
+  email           String  @default("")
+  website         String  @default("")
+  ninea           String  @default("")
+  rc              String  @default("")
+  currency        String  @default("FCFA")
+  country         String  @default("Senegal")
+  supportWhatsapp String  @default("")
+  supportEmail    String  @default("")
+  // WhatsApp Evolution API
+  whatsappEnabled      Boolean @default(false)
+  whatsappInstanceName String  @default("")
+  whatsappApiUrl       String  @default("")
+  whatsappApiKey       String  @default("")
+  whatsappConnected    Boolean @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Counter {
+  id  String @id
+  seq Int    @default(0)
+}
+
+// ─── WhatsApp Messages ───
+
+model WhatsAppMessage {
+  id             String   @id @default(uuid())
+  tenantId       String?
+  recipientPhone String
+  recipientName  String   @default("")
+  type           String   @default("text") // text, document
+  documentType   String?  // invoice, quote, delivery_note, debt_reminder
+  documentId     String?
+  documentNumber String?
+  message        String   @default("")
+  status         String   @default("sent") // sent, delivered, read, failed
+  errorMessage   String   @default("")
+  sentBy         String   @default("")
+  createdAt      DateTime @default(now())
+
+  @@index([tenantId])
+  @@index([documentType, documentId])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ─── Notifications ───
+
+model Notification {
+  id        String   @id @default(uuid())
+  tenantId  String?
+  userId    String?
+  type      String   // stock_low, new_order, payment_received, invoice_overdue, etc.
+  title     String
+  message   String   @default("")
+  link      String   @default("")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, userId, read])
+  @@index([createdAt(sort: Desc)])
+}
+
+// ─── Refresh Tokens ───
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// ─── Gestion des Tâches ───
+
+model TaskBoard {
+  id          String   @id @default(uuid())
+  name        String
+  description String   @default("")
+  color       String   @default("#10b981")
+  tenantId    String?
+  createdBy   String?
+  archived    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  columns TaskColumn[]
+  labels  TaskLabel[]
+
+  @@index([tenantId, archived])
+}
+
+model TaskColumn {
+  id        String   @id @default(uuid())
+  boardId   String
+  board     TaskBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name      String
+  color     String   @default("")
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  cards TaskCard[]
+
+  @@index([boardId])
+}
+
+model TaskCard {
+  id          String    @id @default(uuid())
+  columnId    String
+  column      TaskColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  title       String
+  description String    @default("")
+  priority    String    @default("medium") // low, medium, high, urgent
+  dueDate     DateTime?
+  assignee    String    @default("")
+  sortOrder   Int       @default(0)
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+  tenantId    String?
+  createdBy   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  labels   TaskCardLabel[]
+  checklist TaskChecklist[]
+  comments  TaskComment[]
+
+  @@index([columnId])
+  @@index([tenantId])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model TaskLabel {
+  id      String @id @default(uuid())
+  boardId String
+  board   TaskBoard @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  name    String
+  color   String @default("#6366f1")
+
+  cards TaskCardLabel[]
+
+  @@index([boardId])
+}
+
+model TaskCardLabel {
+  id      String    @id @default(uuid())
+  cardId  String
+  card    TaskCard  @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  labelId String
+  label   TaskLabel @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, labelId])
+  @@index([cardId])
+  @@index([labelId])
+}
+
+model TaskChecklist {
+  id      String   @id @default(uuid())
+  cardId  String
+  card    TaskCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  text    String
+  checked Boolean  @default(false)
+  sortOrder Int    @default(0)
+
+  @@index([cardId])
+}
+
+model TaskComment {
+  id        String   @id @default(uuid())
+  cardId    String
+  card      TaskCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  text      String
+  author    String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([cardId])
+}
+
+// ─── POS / Caisse ───
+
+model CashSession {
+  id            String    @id @default(uuid())
+  number        String    @unique
+  openedAt      DateTime  @default(now())
+  closedAt      DateTime?
+  openingAmount Float     @default(0)
+  closingAmount Float?
+  expectedAmount Float?
+  status        String    @default("ouverte") // ouverte, cloturee
+  notes         String    @default("")
+  openedBy      String    @default("")
+  closedBy      String    @default("")
+  tenantId      String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  sales         CashSale[]
+
+  @@index([status])
+  @@index([openedAt(sort: Desc)])
+  @@index([tenantId])
+}
+
+model CashSale {
+  id             String      @id @default(uuid())
+  number         String      @unique
+  sessionId      String
+  session        CashSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  clientName     String      @default("")
+  subtotal       Float       @default(0)
+  discount       Float       @default(0)
+  total          Float       @default(0)
+  paymentMethod  String      @default("especes") // especes, wave, om, carte, mixte
+  amountPaid     Float       @default(0)
+  changeGiven    Float       @default(0)
+  notes          String      @default("")
+  createdBy      String      @default("")
+  createdAt      DateTime    @default(now())
+
+  items          CashSaleItem[]
+
+  @@index([sessionId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model CashSaleItem {
+  id          String   @id @default(uuid())
+  saleId      String
+  sale        CashSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  productId   String?
+  variantId   String?
+  description String   @default("")
+  quantity    Int      @default(1)
+  unitPrice   Float    @default(0)
+  total       Float    @default(0)
+
+  @@index([saleId])
+}
+
+// ─── Factures Recurrentes ───
+
+model RecurringInvoice {
+  id              String   @id @default(uuid())
+  clientId        String
+  frequency       String   @default("mensuel") // hebdomadaire, mensuel, trimestriel, annuel
+  nextDate        DateTime
+  lastGeneratedAt DateTime?
+  active          Boolean  @default(true)
+  templateItems   Json     @default("[]") // [{description, quantity, unitPrice}]
+  showTax         Boolean  @default(false)
+  taxRate         Float    @default(18)
+  notes           String   @default("")
+  totalGenerated  Int      @default(0)
+  tenantId        String?
+  createdBy       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([tenantId, active])
+  @@index([nextDate])
+}
+
+// ─── Conges ───
+
+model Leave {
+  id          String   @id @default(uuid())
+  employeeId  String
+  employee    Employee @relation(fields: [employeeId], references: [id])
+  type        String   @default("conge_paye") // conge_paye, maladie, sans_solde, maternite, autre
+  startDate   DateTime
+  endDate     DateTime
+  days        Float    @default(1)
+  reason      String   @default("")
+  status      String   @default("en_attente") // en_attente, approuve, refuse
+  approvedBy  String?
+  tenantId    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([employeeId])
+  @@index([tenantId, status])
+  @@index([startDate])
+}
+
+// ─── Presences ───
+
+model Attendance {
+  id         String    @id @default(uuid())
+  employeeId String
+  employee   Employee  @relation(fields: [employeeId], references: [id])
+  date       DateTime
+  checkIn    DateTime?
+  checkOut   DateTime?
+  status     String    @default("present") // present, absent, retard, conge
+  notes      String    @default("")
+  tenantId   String?
+  createdAt  DateTime  @default(now())
+
+  @@unique([employeeId, date])
+  @@index([tenantId, date])
+  @@index([employeeId])
+}
+
+// ─── Notation Fournisseurs ───
+
+model SupplierRating {
+  id            String   @id @default(uuid())
+  supplierId    String
+  supplier      Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  qualityScore  Int      @default(3) // 1-5
+  deliveryScore Int      @default(3) // 1-5
+  priceScore    Int      @default(3) // 1-5
+  serviceScore  Int      @default(3) // 1-5
+  comment       String   @default("")
+  orderId       String?  // optional link to purchase order
+  ratedBy       String   @default("")
+  tenantId      String?
+  createdAt     DateTime @default(now())
+
+  @@index([supplierId])
+  @@index([tenantId])
+}
+
+// ─── Audit Trail ───
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  tenantId  String
+  entity    String   // "product", "invoice", "client", etc.
+  entityId  String
+  action    String   // "create", "update", "delete"
+  changes   Json     @default("{}")
+  userId    String?
+  userName  String   @default("")
+  createdAt DateTime @default(now())
+
+  @@index([tenantId, entity, entityId])
+  @@index([createdAt(sort: Desc)])
+}

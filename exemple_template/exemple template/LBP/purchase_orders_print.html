@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Commande Fournisseur #{{ order.invoice_number }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        .header p {
+            color: #7f8c8d;
+            margin-top: 0;
+        }
+        .company-info {
+            margin-bottom: 20px;
+        }
+        .company-info h2 {
+            color: #2c3e50;
+            font-size: 18px;
+            margin-bottom: 5px;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            width: 48%;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .info-box h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .info-box p {
+            margin: 5px 0;
+        }
+        .info-box .label {
+            font-weight: bold;
+            display: inline-block;
+            width: 140px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+            font-weight: bold;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .total-row {
+            font-weight: bold;
+            background-color: #f9f9f9;
+        }
+        .notes {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 30px;
+        }
+        .notes h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            font-size: 16px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            font-size: 12px;
+            color: #7f8c8d;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            font-weight: bold;
+            color: white;
+        }
+        .status-pending {
+            background-color: #f39c12;
+        }
+        .status-completed {
+            background-color: #27ae60;
+        }
+        .status-canceled {
+            background-color: #e74c3c;
+        }
+        @media print {
+            body {
+                padding: 0;
+                font-size: 12px;
+            }
+            .no-print {
+                display: none;
+            }
+            .container {
+                width: 100%;
+                max-width: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>COMMANDE FOURNISSEUR</h1>
+            <p>N° {{ order.invoice_number }}</p>
+            <div>
+                <span class="status-badge 
+                    {% if order.status == 'En attente' %}status-pending
+                    {% elif order.status == 'Terminée' %}status-completed
+                    {% elif order.status == 'Annulée' %}status-canceled
+                    {% endif %}">
+                    {{ order.status }}
+                </span>
+            </div>
+        </div>
+
+        <div class="company-info">
+            <h2>{{ settings.company_name if settings else "LOUCAR BUSINESS PRO" }}</h2>
+            <p>{{ settings.address if settings else "Adresse de l'entreprise" }}</p>
+            <p>Tél: {{ settings.phone if settings else "Téléphone" }} | Email: {{ settings.email if settings else "Email" }}</p>
+        </div>
+
+        <div class="info-section">
+            <div class="info-box">
+                <h3>Informations de la commande</h3>
+                <p><span class="label">N° Commande:</span> {{ order.invoice_number }}</p>
+                <p><span class="label">Date de commande:</span> {{ order.invoice_date.strftime('%d/%m/%Y') }}</p>
+                <p><span class="label">Date de livraison:</span> {{ order.due_date.strftime('%d/%m/%Y') if order.due_date else 'Non spécifiée' }}</p>
+                <p><span class="label">Méthode de paiement:</span> {{ order.payment_method }}</p>
+            </div>
+            <div class="info-box">
+                <h3>Informations du fournisseur</h3>
+                {% if order.supplier %}
+                    <p><span class="label">Nom:</span> {{ order.supplier.name }}</p>
+                    <p><span class="label">Adresse:</span> {{ order.supplier.address }}</p>
+                    <p><span class="label">Téléphone:</span> {{ order.supplier.phone }}</p>
+                    <p><span class="label">Email:</span> {{ order.supplier.email }}</p>
+                {% else %}
+                    <p>Aucune information fournisseur disponible</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Produit</th>
+                    <th>Description</th>
+                    <th class="text-center">Quantité</th>
+                    <th class="text-right">Prix unitaire</th>
+                    <th class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if items %}
+                    {% for item in items %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>
+                                {% if item.product %}
+                                    {{ item.product.name }} ({{ item.product.reference }})
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ item.description }}</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-right">{{ item.unit_price|format_currency }}</td>
+                            <td class="text-right">{{ item.total_price|format_currency }}</td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="6" class="text-center">Aucun article dans cette commande</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="5" class="text-right">Total:</td>
+                    <td class="text-right">{{ order.total_amount|format_currency }}</td>
+                </tr>
+            </tfoot>
+        </table>
+
+        {% if order.notes %}
+        <div class="notes">
+            <h3>Notes</h3>
+            <p>{{ order.notes|nl2br }}</p>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p>{{ settings.company_name if settings else "LOUCAR BUSINESS PRO" }} - {{ settings.address if settings else "Adresse" }}</p>
+            <p>Tél: {{ settings.phone if settings else "Téléphone" }} | Email: {{ settings.email if settings else "Email" }}</p>
+            <p>Document généré le {{ now().strftime('%d/%m/%Y à %H:%M') }}</p>
+        </div>
+    </div>
+
+    <div class="no-print" style="text-align: center; margin-top: 20px;">
+        <button onclick="window.print();" style="padding: 10px 20px; background-color: #3498db; color: white; border: none; border-radius: 5px; cursor: pointer;">
+            Imprimer
+        </button>
+        <button onclick="window.close();" style="padding: 10px 20px; background-color: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; margin-left: 10px;">
+            Fermer
+        </button>
+    </div>
+</body>
+</html>

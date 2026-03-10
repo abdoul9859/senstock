@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="fr" style="margin: 0; padding: 0; width: 100%; height: 100%;">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bon de Livraison {{ delivery_note.delivery_number }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --text-primary: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --border-color: #ecf0f1;
+            --bg-light: #f8f9fa;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --lbp-primary: #0070c0;
+            --lbp-secondary: #004d8a;
+            --lbp-accent: #0090e3;
+            --lbp-light: #e6f2ff;
+            --lbp-gradient: linear-gradient(135deg, #0070c0 0%, #004d8a 100%);
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            min-height: 100vh !important;
+            background-color: #f5f5f5;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            font-size: 11pt;
+            color: var(--text-primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        .page-controls {
+            position: fixed;
+            top: 20px;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            z-index: 1000;
+        }
+        
+        .page-controls .btn {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 14px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .page-controls .btn i {
+            font-size: 16px;
+        }
+        
+        .page-controls .btn-print {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+        }
+        
+        .page-controls .btn-download {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+        }
+        
+        .page-controls .btn-return {
+            background-color: var(--secondary-color);
+            color: white;
+            border: none;
+        }
+        
+        .page-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 80px 0 0;
+            min-height: 100vh;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        /* Styles spécifiques pour l'impression */
+        @media print {
+            html, body {
+                width: 210mm;
+                height: 297mm;
+                margin: 0 !important;
+                padding: 0 !important;
+                overflow: hidden;
+            }
+            
+            .page-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                width: 210mm;
+                height: 297mm;
+            }
+            
+            #delivery-container {
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                box-shadow: none !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                transform: none !important;
+            }
+        }
+        
+        .container {
+            width: 210mm !important; /* Taille A4 exacte en mm */
+            max-width: 210mm !important;
+            height: 297mm !important; /* Hauteur A4 fixe */
+            margin: 0 !important;
+            padding: 0 !important;
+            background-color: #fff !important;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            transform-origin: top center;
+            position: relative;
+            box-sizing: border-box;
+        }
+        
+        @media print {
+            @page {
+                margin: 0;
+                size: 210mm 297mm;
+                margin-bottom: 0;
+            }
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+                min-height: 100vh;
+                display: block !important;
+                background-color: white !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .page-container {
+                padding: 0 !important;
+                margin: 0 !important;
+                display: block !important;
+            }
+            .container {
+                width: 210mm !important;
+                max-width: 210mm !important;
+                height: 297mm !important;
+                margin: 0 auto !important;
+                padding: 0 !important;
+                background-color: #fff !important;
+                box-shadow: none !important;
+                box-sizing: border-box !important;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+            .header {
+                background: white !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .footer {
+                margin-top: auto;
+                position: relative;
+                width: 100%;
+                page-break-inside: avoid !important;
+                page-break-before: auto !important;
+            }
+            .content-wrapper {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                box-sizing: border-box;
+            }
+            .products-header {
+                background: #f8f9fa !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color: #333 !important;
+            }
+            .billing-info {
+                background-color: white !important;
+            }
+            .delivery-info {
+                background: #f8f9fa !important;
+            }
+        }
+        
+        html {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        body {
+            font-family: 'Nunito', 'Segoe UI', sans-serif;
+            line-height: 1.5;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-size: 10pt;
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        .container {
+            width: 800px !important;
+            max-width: 800px !important;
+            margin: 0 auto !important;
+            padding: 0 !important;
+            box-sizing: border-box !important;
+            background-color: #fff !important;
+            display: flex !important;
+            flex-direction: column !important;
+            min-height: 100vh !important;
+        }
+        
+        /* En-tête de bon de livraison - Style minimaliste et professionnel */
+        .header {
+            background: white;
+            padding: 30px 40px 25px;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            width: 100%;
+        }
+        
+        .logo-section {
+            display: flex;
+            align-items: flex-start;
+        }
+        
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            margin-right: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo {
+            max-width: 80px;
+            max-height: 80px;
+            object-fit: contain;
+        }
+        
+        .company-info h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0;
+            padding: 0;
+            color: var(--primary-color);
+            letter-spacing: -0.5px;
+        }
+        
+        .company-info h2 {
+            font-size: 14px;
+            font-weight: 400;
+            margin: 4px 0 8px 0;
+            padding: 0;
+            color: var(--text-secondary);
+        }
+        
+        .company-info p {
+            font-size: 12px;
+            margin: 0;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        .delivery-info {
+            text-align: right;
+        }
+        
+        .delivery-title {
+            font-size: 32px;
+            font-weight: 300;
+            color: var(--text-secondary);
+            margin: 0 0 10px 0;
+            letter-spacing: -1px;
+        }
+        
+        .delivery-number {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0 0 15px 0;
+        }
+        
+        .delivery-date {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin: 0;
+        }
+
+        /* Section client et livraison - Style minimaliste */
+        .billing-info {
+            display: flex;
+            padding: 20px 30px;
+            gap: 30px;
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--border-color);
+            margin: 0 25px;
+        }
+        
+        .client-section, .delivery-section {
+            flex: 1;
+        }
+        
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            letter-spacing: 1px;
+            border-bottom: 2px solid var(--accent-color);
+            padding-bottom: 8px;
+            display: inline-block;
+        }
+        
+        .client-details {
+            padding-left: 10px;
+        }
+        
+        .client-details p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+        
+        .client-details strong {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--primary-color);
+        }
+        
+        .delivery-details {
+            background: var(--bg-light);
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+        }
+        
+        .delivery-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .delivery-value {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--primary-color);
+            margin: 0 0 10px 0;
+        }
+
+        h3 {
+            color: var(--lbp-primary);
+            border-bottom: 2px solid var(--lbp-accent);
+            padding-bottom: 5px;
+        }
+
+        /* Section des produits - Style tableau minimaliste */
+        .products-section {
+            flex: 1; /* Changé pour occuper tout l'espace disponible */
+            display: flex;
+            flex-direction: column;
+            min-height: 400px; /* Hauteur minimum augmentée */
+            width: calc(100% - 80px);
+            margin: 20px 40px 0;
+            background: white;
+            border-radius: 0;
+            overflow: hidden;
+        }
+        
+        .products-header {
+            display: flex;
+            background: #f8f9fa;
+            padding: 15px 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            text-transform: uppercase;
+            border: 1px solid #ddd;
+            border-bottom: 2px solid #333;
+        }
+        
+        .product-col {
+            flex: 3;
+            text-align: left;
+        }
+        
+        .qty-col {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .serial-col {
+            flex: 2;
+            text-align: left;
+        }
+        
+        .product-rows-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            border-top: none;
+        }
+        
+        .product-row {
+            display: flex;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e5e5e5;
+            align-items: flex-start;
+            min-height: 50px;
+        }
+        
+        .product-row:last-child {
+            border-bottom: none;
+        }
+        
+        .product-name {
+            flex: 3;
+            text-align: left;
+            font-weight: 500;
+            font-size: 13px;
+            color: var(--text-primary);
+            padding-right: 20px;
+        }
+        
+        .product-qty {
+            flex: 1;
+            text-align: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+        
+        .product-serial {
+            flex: 2;
+            text-align: left;
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding-left: 10px;
+        }
+        
+        /* Instructions spéciales */
+        .special-instructions {
+            margin: 20px 40px;
+            padding: 15px;
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+        }
+        
+        .special-instructions h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: #856404;
+            margin: 0 0 8px 0;
+        }
+        
+        .special-instructions p {
+            font-size: 12px;
+            color: #856404;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* Pied de page - Style sobre et professionnel */
+        .footer {
+            padding: 20px 40px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 11px;
+            width: 100%;
+            position: relative;
+            page-break-inside: avoid;
+            margin-top: auto;
+            background: #f8f9fa;
+        }
+        
+        .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            max-width: 100%;
+            margin: 0 auto;
+        }
+        
+        .footer-section {
+            flex: 1;
+            margin: 0 15px;
+        }
+        
+        .footer-section h4 {
+            font-size: 12px;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 8px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .footer-section p {
+            margin: 3px 0;
+            color: #666;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        
+        .footer-section i {
+            color: #0070c0;
+            margin-right: 5px;
+            font-size: 11px;
+            width: 14px;
+            text-align: center;
+        }
+        
+        .divider {
+            display: none;
+        }
+        
+        .content-wrapper {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-bottom: 200px; /* Espace réservé pour le footer */
+        }
+        
+        .page-footer-container {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: white;
+            page-break-inside: avoid;
+        }
+        
+        /* Signatures */
+        .signatures-section {
+            display: flex;
+            gap: 30px;
+            margin: 30px 40px;
+            padding: 20px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+        }
+        
+        .signature-box {
+            flex: 1;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .signature-box h4 {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0 0 40px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .signature-line {
+            border-bottom: 2px solid #ddd;
+            margin: 0 20px;
+            height: 40px;
+        }
+        
+        .signature-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+            margin-top: 8px;
+        }
+        
+        /* Styles pour la capture PDF */
+        #delivery-container {
+            background-color: #ffffff !important;
+            color: #333333 !important;
+            font-family: 'Nunito', 'Segoe UI', sans-serif !important;
+        }
+        
+        @media print {
+            .footer {
+                background-color: #f8f9fa !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                padding: 15px 30px !important;
+                margin-top: auto !important;
+            }
+            
+            .footer-section p {
+                font-size: 10px !important;
+                line-height: 1.3 !important;
+            }
+            
+            .footer-section h4 {
+                font-size: 11px !important;
+            }
+        }
+    </style>
+    <script>
+        // Auto-impression quand la page se charge
+        window.onload = function() {
+            // Vérifier si nous sommes dans une iframe
+            const isInIframe = window.self !== window.top;
+            
+            if (!isInIframe && document.referrer && document.referrer.includes('/delivery-notes/')) {
+                setTimeout(function() {
+                    window.print();
+                }, 500);
+            }
+        };
+        
+        // Fermer la fenêtre après impression
+        window.onafterprint = function() {
+            const isInIframe = window.self !== window.top;
+            
+            if (!isInIframe && window.opener) {
+                window.close();
+            }
+        };
+    </script>
+</head>
+<body>
+    <!-- Contrôles de la page -->
+    <div class="page-controls no-print">
+        <button id="printBtn" class="btn btn-print">
+            <i class="fas fa-print"></i> Imprimer
+        </button>
+        <button id="downloadBtn" class="btn btn-download">
+            <i class="fas fa-download"></i> Télécharger PDF
+        </button>
+        <button id="returnBtn" class="btn btn-return">
+            <i class="fas fa-arrow-left"></i> Retour
+        </button>
+    </div>
+    
+    <div class="page-container">
+    <div id="delivery-container" class="container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo-section">
+                <div class="logo-container">
+                    {% if settings and settings.logo_path %}
+                    <img src="{{ settings.logo_path }}" alt="Logo" class="logo" onerror="this.src='/static/img/lbp_logo.png'; this.onerror=null;">
+                    {% else %}
+                    <img src="/static/img/lbp_logo.png" alt="Logo LOUCAR BUSINESS PRO" class="logo" onerror="this.style.display='none'; document.getElementById('logo-fallback-delivery').style.display='flex';">
+                    <div id="logo-fallback-delivery" style="width: 60px; height: 60px; background-color: var(--primary-color); border-radius: 8px; display: none; align-items: center; justify-content: center;">
+                        <span style="color: white; font-weight: bold; font-size: 24px;">LBP</span>
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="company-info">
+                    <h1>{{ settings.company_name if settings and settings.company_name else 'LOUCAR BUSINESS PRO' }}</h1>
+                    <h2>Technologie & Électronique</h2>
+                    <p>{{ settings.address if settings and settings.address else 'Ouest Foire, Dakar - Sénégal' }}<br>
+                    RC: {{ settings.rc_number if settings and settings.rc_number else 'SN-DKR-2024.A.22321' }} | NINEA: {{ settings.ninea_number if settings and settings.ninea_number else '011280427-1D1' }}</p>
+                </div>
+            </div>
+            <div class="delivery-info">
+                <h2 class="delivery-title">BON DE LIVRAISON</h2>
+                <p class="delivery-number">#{{ delivery_note.delivery_number }}</p>
+                <p class="delivery-date">Date: {{ delivery_note.delivery_date.strftime('%d/%m/%Y') }}</p>
+            </div>
+        </div>
+
+        <div class="content-wrapper">
+            <!-- Billing Information -->
+            <div class="billing-info">
+                <div class="client-section">
+                    <h3 class="section-title">Client</h3>
+                    <div class="client-details">
+                        <p><strong>{{ delivery_note.customer.name }}</strong></p>
+                        <p>{{ delivery_note.customer.address or 'Adresse non renseignée' }}</p>
+                        <p>{{ delivery_note.customer.phone|formatPhoneNumber }}</p>
+                        {% if delivery_note.customer.email %}
+                        <p>{{ delivery_note.customer.email }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="delivery-section">
+                    <h3 class="section-title">Informations de livraison</h3>
+                    <div class="delivery-details">
+                        <p class="delivery-label">Destinataire:</p>
+                        <p class="delivery-value">{{ delivery_note.receiver_name or delivery_note.customer.name }}</p>
+                        {% if delivery_note.receiver_phone %}
+                        <p class="delivery-label">Téléphone:</p>
+                        <p class="delivery-value">{{ delivery_note.receiver_phone|formatPhoneNumber }}</p>
+                        {% endif %}
+                        {% if delivery_note.delivery_address %}
+                        <p class="delivery-label">Adresse de livraison:</p>
+                        <p class="delivery-value">{{ delivery_note.delivery_address }}</p>
+                        {% endif %}
+                        <p class="delivery-label">Devis origine:</p>
+                        <p class="delivery-value">{{ delivery_note.quote.quote_number }}</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Instructions spéciales -->
+            {% if delivery_note.delivery_instructions %}
+            <div class="special-instructions">
+                <h4><i class="fas fa-info-circle"></i> Instructions de livraison</h4>
+                <p>{{ delivery_note.delivery_instructions }}</p>
+            </div>
+            {% endif %}
+            
+            <!-- Products Section -->
+            <div class="products-section">
+                <div class="products-header">
+                    <div class="product-col">DESCRIPTION</div>
+                    <div class="qty-col">QUANTITÉ</div>
+                </div>
+
+                <div class="product-rows-container">
+                {% if delivery_note.items %}
+                    {% for item in delivery_note.items %}
+                        <div class="product-row">
+                            <div class="product-name">
+                                {{ item.description }}
+                                {% if item.product and item.product.reference %}
+                                <br><small style="color: #999;">Réf: {{ item.product.reference }}</small>
+                                {% endif %}
+                            </div>
+                            <div class="product-qty">{{ item.quantity }}</div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="product-row">
+                        <div class="product-name" style="flex: 4; text-align: center; font-style: italic; color: #666;">
+                            Aucun article dans ce bon de livraison
+                        </div>
+                    </div>
+                {% endif %}
+                </div>
+            </div>
+            
+            <!-- Spacer -->
+            <div style="flex-grow: 1;"></div>
+        </div>
+        
+        <!-- Footer Container -->
+        <div class="page-footer-container">
+            <!-- Signatures -->
+            <div class="signatures-section">
+                <div class="signature-box">
+                    <h4>Livreur</h4>
+                    <div class="signature-line"></div>
+                    <p class="signature-label">Nom et signature</p>
+                </div>
+                <div class="signature-box">
+                    <h4>Destinataire</h4>
+                    <div class="signature-line"></div>
+                    <p class="signature-label">Nom et signature</p>
+                </div>
+            </div>
+            
+            <!-- Footer -->
+            <div class="footer">
+                <div class="footer-content">
+                    <!-- Section Adresse -->
+                    <div class="footer-section">
+                        <h4>Adresse</h4>
+                        <p><i class="fas fa-map-marker-alt"></i> {{ settings.address if settings and settings.address else 'Ouest Foire, Dakar - Sénégal' }}</p>
+                        <p><i class="fas fa-envelope"></i> {{ settings.email if settings and settings.email else 'loucarbusinesspro@gmail.com' }}</p>
+                    </div>
+                    
+                    <!-- Section Contact -->
+                    <div class="footer-section">
+                        <h4>Contact</h4>
+                        <p><i class="fas fa-phone"></i> {{ settings.phone if settings and settings.phone else '77 879 7474' }}</p>
+                        {% if settings and settings.phone2 %}
+                        <p><i class="fas fa-phone"></i> {{ settings.phone2 }}</p>
+                        {% endif %}
+                        {% if settings and settings.whatsapp %}
+                        <p><i class="fab fa-whatsapp"></i> {{ settings.whatsapp }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Section Réseaux sociaux -->
+                    <div class="footer-section">
+                        <h4>Suivez-nous</h4>
+                        {% if settings and settings.instagram %}
+                        <p><i class="fab fa-instagram"></i> @{{ settings.instagram }}</p>
+                        {% endif %}
+                        {% if settings and settings.website %}
+                        <p><i class="fas fa-globe"></i> {{ settings.website }}</p>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Section Informations légales -->
+                    <div class="footer-section">
+                        <h4>Informations légales</h4>
+                        <p>RC: {{ settings.rc_number if settings and settings.rc_number else 'SN-DKR-2024.A.22321' }}</p>
+                        <p>NINEA: {{ settings.ninea_number if settings and settings.ninea_number else '011280427-1D1' }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    </div>
+
+    <!-- Scripts pour html2canvas et jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    
+    <script>
+        window.onload = function() {
+            // Récupérer les éléments
+            const printBtn = document.getElementById('printBtn');
+            const downloadBtn = document.getElementById('downloadBtn');
+            const returnBtn = document.getElementById('returnBtn');
+            const deliveryElement = document.getElementById('delivery-container');
+            
+            // Fonction pour imprimer
+            printBtn.addEventListener('click', function() {
+                window.print();
+            });
+            
+            // Fonction pour télécharger en PDF
+            downloadBtn.addEventListener('click', function() {
+                // Afficher un indicateur de chargement
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Génération...'; 
+                this.disabled = true;
+                
+                // Masquer les contrôles pendant la capture
+                const pageControls = document.querySelector('.page-controls');
+                if (pageControls) {
+                    pageControls.style.display = 'none';
+                }
+                
+                // Préparer le conteneur pour la capture
+                deliveryElement.style.margin = '0';
+                deliveryElement.style.padding = '0';
+                deliveryElement.style.width = '210mm';
+                deliveryElement.style.height = 'auto'; // Laisser la hauteur s'adapter au contenu
+                deliveryElement.style.boxSizing = 'border-box';
+                
+                // Attendre que tous les styles soient appliqués
+                setTimeout(() => {
+                    // Utiliser html2canvas pour capturer le bon de livraison
+                    html2canvas(deliveryElement, {
+                        scale: 2, // Meilleure qualité
+                        useCORS: true,
+                        logging: false,
+                        allowTaint: true,
+                        backgroundColor: '#ffffff',
+                        windowWidth: 210 * 3.78,
+                        windowHeight: deliveryElement.scrollHeight
+                    }).then(function(canvas) {
+                        // Vérifier que le canvas n'est pas vide
+                        if (canvas.width === 0 || canvas.height === 0) {
+                            alert('Erreur: Impossible de capturer le contenu du bon de livraison');
+                            return;
+                        }
+                        
+                        // Créer le PDF avec jsPDF
+                        const { jsPDF } = window.jspdf;
+                        const pdf = new jsPDF('p', 'mm', 'a4');
+                        
+                        // Dimensions de la page A4 en mm
+                        const pageWidth = 210;
+                        const pageHeight = 297;
+                        
+                        // Calculer les dimensions de l'image pour qu'elle s'adapte à la page
+                        const imgWidth = pageWidth - 10; // Marges de 5mm de chaque côté
+                        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+                        
+                        // Si l'image est plus haute que la page, ajuster l'échelle
+                        let finalWidth = imgWidth;
+                        let finalHeight = imgHeight;
+                        
+                        if (imgHeight > pageHeight - 10) {
+                            const ratio = (pageHeight - 10) / imgHeight;
+                            finalHeight = pageHeight - 10;
+                            finalWidth = imgWidth * ratio;
+                        }
+                        
+                        // Centrer l'image sur la page
+                        const x = (pageWidth - finalWidth) / 2;
+                        const y = 5; // Marge supérieure de 5mm
+                        
+                        // Ajouter l'image au PDF
+                        pdf.addImage(canvas.toDataURL('image/png'), 'PNG', x, y, finalWidth, finalHeight);
+                        
+                        // Télécharger le PDF
+                        pdf.save('bon-livraison-{{ delivery_note.delivery_number }}.pdf');
+                        
+                        // Réinitialiser le bouton
+                        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger PDF';
+                        downloadBtn.disabled = false;
+                        
+                        // Réafficher les contrôles
+                        if (pageControls) {
+                            pageControls.style.display = 'flex';
+                        }
+                    }).catch(function(error) {
+                        console.error('Erreur lors de la génération du PDF:', error);
+                        alert('Erreur lors de la génération du PDF: ' + error.message);
+                        
+                        // Réinitialiser le bouton en cas d'erreur
+                        downloadBtn.innerHTML = '<i class="fas fa-download"></i> Télécharger PDF';
+                        downloadBtn.disabled = false;
+                        
+                        // Réafficher les contrôles
+                        if (pageControls) {
+                            pageControls.style.display = 'flex';
+                        }
+                    });
+                }, 500); // Délai pour s'assurer que tout est rendu
+            });
+            
+            // Fonction pour retourner à la page de détail du bon de livraison
+            returnBtn.addEventListener('click', function() {
+                window.location.href = '/delivery-notes/{{ delivery_note.id }}';
+            });
+        };
+    </script>
+</body>
+</html>

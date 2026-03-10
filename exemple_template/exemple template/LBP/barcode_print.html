@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Impression Code-barres - {{ product.name }}</title>
+    <script src="{{ url_for('static', path='js/barcode-generator.js') }}"></script>
+    
+    <style>
+        @page {
+            margin: 20mm;
+            size: A4;
+        }
+        
+        @media print {
+            body {
+                margin: 0;
+                padding: 0;
+                background: white !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-page {
+                page-break-after: always;
+            }
+            
+            .print-page:last-child {
+                page-break-after: auto;
+            }
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        
+        .print-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .print-header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 20px;
+        }
+        
+        .print-header h1 {
+            color: #333;
+            margin: 0 0 10px 0;
+        }
+        
+        .print-header p {
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .barcode-section {
+            text-align: center;
+            margin: 40px 0;
+            padding: 30px;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+        }
+        
+        .product-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+            padding: 20px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        
+        .product-details .detail-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .product-details .label {
+            font-weight: bold;
+            color: #495057;
+            margin-bottom: 5px;
+        }
+        
+        .product-details .value {
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .print-controls {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 0 10px;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.2s;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #0056b3;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background-color: #545b62;
+        }
+        
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background-color: #1e7e34;
+        }
+        
+        .print-instructions {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 20px 0;
+            font-size: 14px;
+            color: #0c5460;
+        }
+        
+        .barcode-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .barcode-item {
+            text-align: center;
+            padding: 15px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: white;
+        }
+        
+        .multiple-print-controls {
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .quantity-control {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+        }
+        
+        .quantity-control input {
+            width: 80px;
+            padding: 5px 10px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        <div class="print-controls no-print">
+            <a href="/barcode/{{ product.id }}" class="btn btn-secondary">← Personnaliser</a>
+            <button onclick="window.print()" class="btn btn-primary">🖨️ Imprimer</button>
+            <a href="/products/{{ product.id }}" class="btn btn-secondary">Retour au produit</a>
+        </div>
+        
+        <div class="print-instructions no-print">
+            <strong>Instructions d'impression:</strong>
+            <ul>
+                <li>Assurez-vous que votre imprimante est configurée pour l'impression couleur si nécessaire</li>
+                <li>Pour de meilleurs résultats, utilisez du papier de qualité</li>
+                <li>Vérifiez l'aperçu avant impression</li>
+                <li>Vous pouvez imprimer plusieurs exemplaires en modifiant la quantité ci-dessous</li>
+            </ul>
+        </div>
+
+        <div class="multiple-print-controls no-print">
+            <h4>Impression multiple</h4>
+            <div class="quantity-control">
+                <label for="print-quantity">Nombre d'exemplaires:</label>
+                <input type="number" id="print-quantity" value="1" min="1" max="20">
+                <button onclick="generateMultipleBarcodes()" class="btn btn-success">Générer</button>
+            </div>
+        </div>
+
+        <div class="print-header">
+            <h1>Code-barres Produit</h1>
+            <p>{{ product.name }}</p>
+            <p>Référence: {{ product.reference }}</p>
+            <p>Généré le: <script>document.write(new Date().toLocaleDateString('fr-FR') + ' ' + new Date().toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}));</script></p>
+        </div>
+
+        <div class="product-details">
+            <div class="detail-group">
+                <span class="label">Nom du produit</span>
+                <span class="value">{{ product.name }}</span>
+            </div>
+            <div class="detail-group">
+                <span class="label">Référence</span>
+                <span class="value">{{ product.reference }}</span>
+            </div>
+            {% if product.description %}
+            <div class="detail-group">
+                <span class="label">Description</span>
+                <span class="value">{{ product.description }}</span>
+            </div>
+            {% endif %}
+            {% if product.price %}
+            <div class="detail-group">
+                <span class="label">Prix</span>
+                <span class="value">{{ "%.2f"|format(product.price) }} €</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="barcode-section">
+            <h3>Code-barres principal</h3>
+            <div id="main-barcode">
+                <!-- Le code-barres sera généré ici -->
+            </div>
+        </div>
+
+        <div id="multiple-barcodes" class="barcode-grid" style="display: none;">
+            <!-- Les codes-barres multiples seront générés ici -->
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Générer le code-barres principal avec les options d'impression
+            const printOptions = {
+                width: {{ print_options.width }},
+                height: {{ print_options.height }},
+                fontSize: {{ print_options.fontSize }},
+                showText: {{ print_options.showText|tojson }},
+                backgroundColor: '{{ print_options.backgroundColor }}',
+                barColor: '{{ print_options.barColor }}',
+                borderColor: '{{ print_options.borderColor }}',
+                borderWidth: {{ print_options.borderWidth }},
+                padding: {{ print_options.padding }},
+                quiet: {{ print_options.quiet }}
+            };
+            
+            const barcodeHTML = window.BarcodeGenerator.generatePrintHTML('{{ product.reference }}', printOptions);
+            document.getElementById('main-barcode').innerHTML = barcodeHTML;
+        });
+
+        function generateMultipleBarcodes() {
+            const quantity = parseInt(document.getElementById('print-quantity').value);
+            const multipleContainer = document.getElementById('multiple-barcodes');
+            
+            if (quantity <= 1) {
+                multipleContainer.style.display = 'none';
+                return;
+            }
+            
+            let barcodeHTML = '';
+            for (let i = 0; i < quantity; i++) {
+                const barcode = window.BarcodeGenerator.generatePrintHTML('{{ product.reference }}', {
+                    width: 250,
+                    height: 60,
+                    fontSize: 12,
+                    showText: true,
+                    backgroundColor: '#ffffff',
+                    barColor: '#000000',
+                    borderColor: '#000000',
+                    borderWidth: 1,
+                    padding: 8,
+                    quiet: 10
+                });
+                
+                barcodeHTML += `<div class="barcode-item">${barcode}</div>`;
+            }
+            
+            multipleContainer.innerHTML = barcodeHTML;
+            multipleContainer.style.display = 'grid';
+            
+            // Masquer le code-barres principal si on imprime multiples
+            document.querySelector('.barcode-section').style.display = 'none';
+        }
+
+        // Restaurer l'affichage normal quand on change la quantité à 1
+        document.getElementById('print-quantity').addEventListener('change', function() {
+            if (parseInt(this.value) <= 1) {
+                document.getElementById('multiple-barcodes').style.display = 'none';
+                document.querySelector('.barcode-section').style.display = 'block';
+            }
+        });
+    </script>
+</body>
+</html>
