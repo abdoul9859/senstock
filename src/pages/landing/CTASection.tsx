@@ -3,14 +3,14 @@ import { ArrowRight, Boxes } from "lucide-react";
 import { useScrollReveal } from "./useScrollReveal";
 
 export default function CTASection() {
-  const { ref, revealed } = useScrollReveal<HTMLDivElement>(0.2);
+  const { ref, revealed } = useScrollReveal<HTMLDivElement>(0.1);
 
   return (
     <section className="relative py-24 sm:py-32" ref={ref}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         <div
-          className={`relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-primary/[0.02] px-8 py-16 text-center transition-all duration-700 sm:px-16 sm:py-20 ${
-            revealed ? "opacity-100 scale-100" : "opacity-0 scale-95"
+          className={`relative overflow-hidden rounded-3xl border border-primary/20 bg-gradient-to-br from-primary/5 via-card to-primary/[0.02] px-8 py-16 text-center sm:px-16 sm:py-20 landing-reveal-scale ${
+            revealed ? "revealed" : ""
           }`}
         >
           {/* Decorative elements */}
@@ -24,17 +24,19 @@ export default function CTASection() {
           <div className="relative">
             {/* Icon */}
             <div
-              className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition-all duration-700 delay-200 ${
-                revealed ? "opacity-100 scale-100" : "opacity-0 scale-75"
+              className={`mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 landing-reveal-scale ${
+                revealed ? "revealed" : ""
               }`}
+              style={{ transitionDelay: revealed ? "300ms" : "0ms" }}
             >
               <Boxes className="h-8 w-8 text-primary" />
             </div>
 
             <h2
-              className={`text-3xl font-bold tracking-tight text-foreground transition-all duration-700 delay-300 sm:text-4xl lg:text-5xl ${
-                revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              className={`text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl landing-reveal-up ${
+                revealed ? "revealed" : ""
               }`}
+              style={{ transitionDelay: revealed ? "400ms" : "0ms" }}
             >
               Prêt à transformer
               <br />
@@ -42,18 +44,20 @@ export default function CTASection() {
             </h2>
 
             <p
-              className={`mx-auto mt-5 max-w-xl text-lg text-muted-foreground transition-all duration-700 delay-400 ${
-                revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              className={`mx-auto mt-5 max-w-xl text-lg text-muted-foreground landing-reveal-up ${
+                revealed ? "revealed" : ""
               }`}
+              style={{ transitionDelay: revealed ? "500ms" : "0ms" }}
             >
               Rejoignez des centaines d'entreprises qui ont déjà simplifié leur quotidien avec SenStock.
               Commencez gratuitement en moins de 2 minutes.
             </p>
 
             <div
-              className={`mt-10 flex flex-col items-center justify-center gap-4 transition-all duration-700 delay-500 sm:flex-row ${
-                revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+              className={`mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row landing-reveal-up ${
+                revealed ? "revealed" : ""
               }`}
+              style={{ transitionDelay: revealed ? "600ms" : "0ms" }}
             >
               <Link
                 to="/register"
@@ -72,9 +76,10 @@ export default function CTASection() {
             </div>
 
             <p
-              className={`mt-6 text-xs text-muted-foreground transition-all duration-700 delay-[600ms] ${
-                revealed ? "opacity-100" : "opacity-0"
+              className={`mt-6 text-xs text-muted-foreground landing-reveal-up ${
+                revealed ? "revealed" : ""
               }`}
+              style={{ transitionDelay: revealed ? "700ms" : "0ms" }}
             >
               Aucune carte bancaire requise. Configuration en 2 minutes.
             </p>

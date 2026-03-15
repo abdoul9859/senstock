@@ -7,6 +7,8 @@ import {
   X, Upload, Package, FileText, StickyNote, PenTool, Users, ArrowLeft, RotateCcw, GripVertical,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useDraftSync } from "@/hooks/useDraftSync";
+import { DraftBanner } from "@/components/DraftBanner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +92,28 @@ const NouveauDevisPage = () => {
   const { id: editId } = useParams<{ id: string }>();
   const isEditMode = !!editId;
   const [editLoaded, setEditLoaded] = useState(false);
+
+  // ---- Draft sync ----
+  const { otherDrafts, saveDraft, clearDraft, loadOtherDraft } = useDraftSync({
+    type: "devis",
+    enabled: !isEditMode,
+  });
+
+  function resumeFromOtherDevice() {
+    const data = loadOtherDraft();
+    if (!data) return;
+    if (data.clientId) setClientId(data.clientId as string);
+    if (data.items && Array.isArray(data.items)) setItems(data.items as QuoteItemForm[]);
+    if (data.notes) setNotes(data.notes as string);
+    if (data.showTax !== undefined) setShowTax(data.showTax as boolean);
+    if (data.taxRate) setTaxRate(data.taxRate as string);
+    if (data.showItemPrices !== undefined) setShowItemPrices(data.showItemPrices as boolean);
+    if (data.showSectionTotals !== undefined) setShowSectionTotals(data.showSectionTotals as boolean);
+    if (data.signature) setSignature(data.signature as string);
+    if (data.quoteDate) setQuoteDate(new Date(data.quoteDate as string));
+    if (data.validUntil) setValidUntil(new Date(data.validUntil as string));
+    toast.success("Brouillon restaure depuis un autre appareil");
+  }
 
   // ---- Form state ----
   const [quoteNumber, setQuoteNumber] = useState("");
@@ -408,6 +432,18 @@ const NouveauDevisPage = () => {
     reader.readAsDataURL(file);
   }
 
+  // Sync full form state for cross-device
+  useEffect(() => {
+    if (isEditMode || items.length === 0) return;
+    saveDraft({
+      clientId, items, notes, showTax, taxRate,
+      showItemPrices, showSectionTotals, signature,
+      quoteDate: quoteDate.toISOString(),
+      validUntil: validUntil?.toISOString(),
+    });
+  }, [isEditMode, saveDraft, clientId, items, notes, showTax, taxRate,
+    showItemPrices, showSectionTotals, signature, quoteDate, validUntil]);
+
   // ---- Save ----
 
   async function handleSave() {
@@ -446,6 +482,7 @@ const NouveauDevisPage = () => {
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Erreur lors de la sauvegarde"); return; }
       toast.success(isEditMode ? `Devis ${data.number} modifie` : `Devis ${data.number} cree`);
+      clearDraft();
       navigate("/commerce/devis");
     } catch {
       setError("Impossible de contacter le serveur");
@@ -461,6 +498,9 @@ const NouveauDevisPage = () => {
 
   return (
     <div className="pb-24 animate-fade-in">
+      {/* Draft sync banner */}
+      <DraftBanner drafts={otherDrafts} onResume={resumeFromOtherDevice} className="mb-4" />
+
       {/* Page header */}
       <div className="mb-6 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/commerce/devis")}>

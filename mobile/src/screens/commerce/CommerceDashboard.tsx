@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Receipt, DollarSign, AlertCircle, Users, ChevronRight, Plus } from "lucide-react-native";
+import { Receipt, DollarSign, AlertCircle, Users, ChevronRight, Plus, ScanLine } from "lucide-react-native";
 import ScreenContainer from "../../components/ui/ScreenContainer";
 import KpiCard from "../../components/ui/KpiCard";
 import InvoiceCard from "../../components/invoice/InvoiceCard";
@@ -102,6 +102,10 @@ export default function CommerceDashboard() {
           <Plus size={18} color={colors.primaryForeground} />
           <Text style={[styles.createBtnText, { color: colors.primaryForeground }]}>Nouvelle facture</Text>
         </TouchableOpacity>
+        <TouchableOpacity style={[styles.createBtn, { backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, marginTop: spacing.sm }]} onPress={() => nav.navigate("ScanInvoice")} activeOpacity={0.8}>
+          <ScanLine size={18} color={colors.primary} />
+          <Text style={[styles.createBtnText, { color: colors.text }]}>Scanner facture</Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.quickLinks}>
@@ -111,6 +115,9 @@ export default function CommerceDashboard() {
         <QuickAction label="Creances" onPress={() => nav.navigate("Creances")} colors={colors} />
         <QuickAction label="Achats quotidiens" onPress={() => nav.navigate("AchatsQuotidiens")} colors={colors} />
         <QuickAction label="Clients" onPress={() => nav.navigate("ClientList")} colors={colors} />
+        <QuickAction label="Produits repris" onPress={() => nav.navigate("ExchangeProducts")} colors={colors} />
+        <QuickAction label="Demandes clients" onPress={() => nav.navigate("DemandesClients")} colors={colors} />
+        <QuickAction label="Maintenance" onPress={() => nav.navigate("MaintenanceList")} colors={colors} />
       </View>
 
       {/* Recent invoices */}

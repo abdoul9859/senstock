@@ -57,7 +57,7 @@ const highlights = [
 ];
 
 export default function StatsSection() {
-  const { ref, revealed } = useScrollReveal<HTMLDivElement>(0.15);
+  const { ref, revealed } = useScrollReveal<HTMLDivElement>(0.08);
 
   return (
     <section className="relative border-t border-border/50 bg-muted/20 py-20 sm:py-24" ref={ref}>
@@ -72,10 +72,10 @@ export default function StatsSection() {
           {highlights.map((item, i) => (
             <div
               key={item.title}
-              className={`group flex flex-col items-center rounded-xl border border-border/50 bg-card/50 px-6 py-8 text-center backdrop-blur-sm transition-all duration-500 hover:-translate-y-1 hover:border-primary/30 hover:bg-card ${
-                revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-8"
+              className={`landing-reveal-scale group flex flex-col items-center rounded-xl border border-border/50 bg-card/50 px-6 py-8 text-center backdrop-blur-sm hover:-translate-y-1 hover:border-primary/30 hover:bg-card ${
+                revealed ? "revealed" : ""
               }`}
-              style={{ transitionDelay: revealed ? `${i * 100}ms` : "0ms" }}
+              style={{ transitionDelay: revealed ? `${i * 150}ms` : "0ms" }}
             >
               <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 transition-colors duration-300 group-hover:bg-primary/15">
                 <item.icon className="h-6 w-6 text-primary" />

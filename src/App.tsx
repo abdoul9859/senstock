@@ -23,6 +23,7 @@ import CategoriesPage from "./pages/entrepot/CategoriesPage";
 import ParametresPage from "./pages/entrepot/ParametresPage";
 import DoublonsPage from "./pages/entrepot/DoublonsPage";
 import MaintenancePage from "./pages/entrepot/MaintenancePage";
+import EtiquettesPage from "./pages/entrepot/EtiquettesPage";
 
 // Commerce
 import CommerceDashboard from "./pages/commerce/CommerceDashboard";
@@ -44,6 +45,7 @@ import ImportProduitsPage from "./pages/commerce/ImportProduitsPage";
 import DoublonsClientsPage from "./pages/commerce/DoublonsClientsPage";
 import AchatsQuotidiensPage from "./pages/commerce/AchatsQuotidiensPage";
 import CaissePage from "./pages/commerce/CaissePage";
+import ProduitsReprisPage from "./pages/commerce/ProduitsReprisPage";
 
 // Personnel
 import PersonnelDashboard from "./pages/personnel/PersonnelDashboard";
@@ -215,6 +217,7 @@ const AppRoutes = () => (
       <Route path="/entrepot/codes-barres" element={<CodesBarresPage />} />
       <Route path="/entrepot/categories" element={<CategoriesPage />} />
       <Route path="/entrepot/doublons" element={<DoublonsPage />} />
+      <Route path="/entrepot/etiquettes" element={<EtiquettesPage />} />
       <Route path="/entrepot/maintenance" element={<MaintenancePage />} />
       <Route path="/entrepot/parametres" element={<ParametresPage />} />
 
@@ -232,6 +235,7 @@ const AppRoutes = () => (
       <Route path="/commerce/bons-livraison" element={<BonsLivraisonPage />} />
       <Route path="/commerce/clients" element={<ClientsPage />} />
       <Route path="/commerce/demandes" element={<DemandesClientsPage />} />
+      <Route path="/commerce/produits-repris" element={<ProduitsReprisPage />} />
       <Route path="/commerce/creances" element={<CreancesPage />} />
       <Route path="/commerce/recurrentes" element={<RecurrentesPage />} />
       <Route path="/commerce/import-produits" element={<ImportProduitsPage />} />

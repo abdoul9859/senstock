@@ -1,5 +1,5 @@
-import { useRef } from "react";
-import { Settings, RotateCcw, Palette, Building2, FileText, Check } from "lucide-react";
+import { useRef, useState } from "react";
+import { Settings, RotateCcw, Palette, Building2, FileText, Check, Save, Loader2 } from "lucide-react";
 import { useCommerceSettings, DEFAULT_COMMERCE_SETTINGS } from "@/hooks/useCommerceSettings";
 import { getEntrepotSettings } from "@/hooks/useEntrepotSettings";
 import { templates, getTemplateById } from "@/components/invoice-templates";
@@ -54,10 +54,23 @@ const ACCENT_PRESETS = [
 ];
 
 const CommerceParametresPage = () => {
-  const { settings, updateSettings, resetSettings } = useCommerceSettings();
+  const { settings, updateSettings, resetSettings, saveNow } = useCommerceSettings();
   const { toast } = useToast();
   const logoInputRef = useRef<HTMLInputElement>(null);
   const currency = getEntrepotSettings().currency;
+  const [saving, setSaving] = useState(false);
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      await saveNow();
+      toast({ title: "Parametres enregistres", description: "Les modifications ont ete sauvegardees." });
+    } catch {
+      toast({ title: "Erreur", description: "Impossible de sauvegarder les parametres.", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  }
 
   function handleReset() {
     resetSettings();
@@ -115,7 +128,7 @@ const CommerceParametresPage = () => {
                   <button
                     key={tmpl.id}
                     type="button"
-                    onClick={() => updateSettings({ invoiceTemplate: tmpl.id as "lbp" | "techzone" | "minimal" })}
+                    onClick={() => updateSettings({ invoiceTemplate: tmpl.id as "lbp" | "techzone" | "minimal" | "classique" })}
                     className={`relative text-left rounded-lg border-2 transition-all overflow-hidden ${
                       isSelected
                         ? "border-primary ring-2 ring-primary/20"
@@ -315,11 +328,15 @@ const CommerceParametresPage = () => {
           </CardContent>
         </Card>
 
-        {/* Reset */}
-        <div className="flex justify-end pb-4">
+        {/* Actions */}
+        <div className="flex justify-between pb-4">
           <Button variant="outline" onClick={handleReset}>
             <RotateCcw className="h-4 w-4" />
-            Reinitialiser les parametres
+            Reinitialiser
+          </Button>
+          <Button onClick={handleSave} disabled={saving}>
+            {saving ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
+            Enregistrer
           </Button>
         </div>
       </div>

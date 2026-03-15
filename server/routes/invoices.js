@@ -77,6 +77,147 @@ function formatInvoices(arr) {
   return arr.map(formatInvoice);
 }
 
+// GET /api/invoices/by-product?barcode=xxx — find invoice containing a product/variant
+// MUST be before /:id
+router.get("/by-product", async (req, res) => {
+  try {
+    const { barcode, serialNumber } = req.query;
+    if (!barcode && !serialNumber) return res.status(400).json({ error: "barcode ou serialNumber requis" });
+
+    const q = (barcode || serialNumber || "").toLowerCase();
+
+    // Find matching variants first
+    const variants = await prisma.variant.findMany({
+      where: {
+        OR: [
+          { barcode: { contains: q, mode: "insensitive" } },
+          { serialNumber: { contains: q, mode: "insensitive" } },
+        ],
+        product: { tenantId: req.tenantId },
+        soldInvoiceId: { not: null },
+      },
+      select: { soldInvoiceId: true, soldInvoiceNumber: true },
+    });
+
+    if (variants.length === 0) {
+      return res.status(404).json({ error: "Aucune facture trouvee pour ce produit" });
+    }
+
+    const invoiceId = variants[0].soldInvoiceId;
+    const invoice = await prisma.invoice.findFirst({
+      where: { id: invoiceId, tenantId: req.tenantId, deleted: false },
+      include: { client: true },
+    });
+
+    if (!invoice) return res.status(404).json({ error: "Facture introuvable" });
+
+    const addId = (o) => o ? { ...o, _id: o.id } : o;
+    const formatted = addId(invoice);
+    if (formatted.client) formatted.client = addId(formatted.client);
+    res.json(formatted);
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+// GET /api/invoices/find-by-product?q=barcode_or_serial — find all invoices containing a product/variant
+// MUST be before /:id
+router.get("/find-by-product", async (req, res) => {
+  try {
+    const q = (req.query.q || "").trim();
+    if (!q) return res.status(400).json({ error: "Parametre q requis" });
+
+    // 1. Search variants by barcode or serialNumber
+    const matchingVariants = await prisma.variant.findMany({
+      where: {
+        OR: [
+          { barcode: { contains: q, mode: "insensitive" } },
+          { serialNumber: { contains: q, mode: "insensitive" } },
+        ],
+        product: { tenantId: req.tenantId },
+      },
+      select: { id: true, productId: true, soldInvoiceId: true },
+    });
+
+    // 2. Search products by barcode
+    const matchingProducts = await prisma.product.findMany({
+      where: {
+        barcode: { contains: q, mode: "insensitive" },
+        tenantId: req.tenantId,
+      },
+      select: { id: true },
+    });
+
+    const variantIds = matchingVariants.map((v) => v.id);
+    const productIds = [
+      ...new Set([
+        ...matchingVariants.map((v) => v.productId),
+        ...matchingProducts.map((p) => p.id),
+      ]),
+    ];
+
+    // 4. Collect soldInvoiceIds directly from variants
+    const soldInvoiceIds = matchingVariants
+      .filter((v) => v.soldInvoiceId)
+      .map((v) => v.soldInvoiceId);
+
+    if (productIds.length === 0 && variantIds.length === 0 && soldInvoiceIds.length === 0) {
+      return res.json([]);
+    }
+
+    // 3. Find invoices where those products/variants appear in items or exchangeItems
+    const itemConditions = [];
+    if (productIds.length > 0) {
+      itemConditions.push({ items: { some: { productId: { in: productIds } } } });
+      itemConditions.push({ exchangeItems: { some: { productId: { in: productIds } } } });
+    }
+    if (variantIds.length > 0) {
+      itemConditions.push({ items: { some: { variantId: { in: variantIds } } } });
+      itemConditions.push({ exchangeItems: { some: { variantId: { in: variantIds } } } });
+    }
+    if (soldInvoiceIds.length > 0) {
+      itemConditions.push({ id: { in: soldInvoiceIds } });
+    }
+
+    const invoices = await prisma.invoice.findMany({
+      where: {
+        tenantId: req.tenantId,
+        deleted: { not: true },
+        OR: itemConditions,
+      },
+      select: {
+        id: true,
+        number: true,
+        type: true,
+        status: true,
+        date: true,
+        total: true,
+        client: { select: { id: true, name: true } },
+      },
+      orderBy: { date: "desc" },
+    });
+
+    // 5. Return unique invoices with basic info + _id for frontend compat
+    const seen = new Set();
+    const unique = [];
+    for (const inv of invoices) {
+      if (seen.has(inv.id)) continue;
+      seen.add(inv.id);
+      unique.push({
+        ...inv,
+        _id: inv.id,
+        clientName: inv.client?.name || null,
+        client: inv.client ? { ...inv.client, _id: inv.client.id } : null,
+      });
+    }
+
+    res.json(unique);
+  } catch (e) {
+    logger.error("find-by-product error:", { error: e.message });
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
 // GET /api/invoices/next-number?type=facture — preview next number
 // MUST be before /:id to avoid Express treating "next-number" as an ID
 router.get("/next-number", async (req, res) => {
@@ -140,12 +281,43 @@ router.get("/", async (req, res) => {
       include: {
         client: { select: { id: true, name: true, phone: true, email: true } },
         items: true,
-        exchangeItems: true,
+        exchangeItems: { include: { label: true } },
         paymentHistory: true,
       },
       orderBy: { createdAt: "desc" },
     });
     res.json(formatInvoices(invoices));
+  } catch {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// GET /api/invoices/drafts — list draft invoices for sync
+// MUST be before /:id to avoid being caught by the param route
+router.get("/drafts", async (req, res) => {
+  try {
+    const drafts = await prisma.invoice.findMany({
+      where: {
+        tenantId: req.tenantId,
+        status: "brouillon",
+        deleted: { not: true },
+      },
+      select: {
+        id: true,
+        number: true,
+        type: true,
+        status: true,
+        date: true,
+        total: true,
+        lastEditedOn: true,
+        updatedAt: true,
+        client: { select: { id: true, name: true } },
+        items: { select: { id: true, description: true, quantity: true, unitPrice: true, total: true } },
+        exchangeItems: { select: { id: true, description: true, price: true } },
+      },
+      orderBy: { updatedAt: "desc" },
+    });
+    res.json(drafts);
   } catch {
     res.status(500).json({ error: "Erreur serveur" });
   }
@@ -169,7 +341,7 @@ router.get("/:id", async (req, res) => {
             },
           },
         },
-        exchangeItems: true,
+        exchangeItems: { include: { label: true } },
         paymentHistory: true,
       },
     });
@@ -278,6 +450,7 @@ router.post("/", async (req, res) => {
         warrantyDescription: warranty?.description || "",
         notes: notes || "",
         signature: signature || "",
+        lastEditedOn: req.body.lastEditedOn || "web",
         createdBy: req.userId,
         items: {
           create: (items || []).map((item, idx) => ({
@@ -305,6 +478,7 @@ router.post("/", async (req, res) => {
             quantity: ei.quantity || 1,
             notes: ei.notes || "",
             addToStock: ei.addToStock || false,
+            labelId: ei.labelId || undefined,
           })),
         },
         paymentHistory: {
@@ -313,7 +487,7 @@ router.post("/", async (req, res) => {
       },
       include: {
         items: true,
-        exchangeItems: true,
+        exchangeItems: { include: { label: true } },
         paymentHistory: true,
       },
     });
@@ -458,7 +632,7 @@ router.post("/", async (req, res) => {
       include: {
         client: { select: { id: true, name: true, phone: true, email: true } },
         items: true,
-        exchangeItems: true,
+        exchangeItems: { include: { label: true } },
         paymentHistory: true,
       },
     });
@@ -486,7 +660,7 @@ router.put("/:id", async (req, res) => {
       "discountAmount", "discountReason",
       "showTax", "taxRate", "taxAmount", "total",
       "showItemPrices", "showSectionTotals",
-      "notes", "signature", "status",
+      "notes", "signature", "status", "lastEditedOn",
     ];
     for (const key of flatFields) {
       if (req.body[key] !== undefined) {
@@ -552,6 +726,7 @@ router.put("/:id", async (req, res) => {
             quantity: ei.quantity || 1,
             notes: ei.notes || "",
             addToStock: ei.addToStock || false,
+            labelId: ei.labelId || undefined,
           })),
         });
       }
@@ -625,7 +800,7 @@ router.put("/:id", async (req, res) => {
       include: {
         client: { select: { id: true, name: true, phone: true, email: true } },
         items: true,
-        exchangeItems: true,
+        exchangeItems: { include: { label: true } },
         paymentHistory: true,
       },
     });

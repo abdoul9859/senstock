@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MessageSquare, Clock, PlayCircle, CheckCircle, Plus, Pencil, Trash2,
-  Eye, ArrowUpDown, ArrowUp, ArrowDown, Search, X, AlertTriangle, XCircle,
+  Eye, ArrowUpDown, ArrowUp, ArrowDown, Search, X, AlertTriangle, XCircle, ImageIcon,
 } from "lucide-react";
 import { StatCard } from "@/components/StockCard";
 import { StockLoader } from "@/components/StockLoader";
@@ -38,6 +38,7 @@ interface RequestItem {
   description: string;
   quantity: number;
   notes: string;
+  photos: string[];
 }
 
 interface ClientRequest {
@@ -99,7 +100,7 @@ const DemandesClientsPage = () => {
     priority: "normale",
     dueDate: "",
     notes: "",
-    items: [{ description: "", quantity: 1, notes: "" }] as RequestItem[],
+    items: [{ description: "", quantity: 1, notes: "", photos: [] }] as RequestItem[],
   });
 
   // Detail dialog
@@ -164,7 +165,7 @@ const DemandesClientsPage = () => {
 
   function openNew() {
     setEditing(null);
-    setForm({ clientId: "", priority: "normale", dueDate: "", notes: "", items: [{ description: "", quantity: 1, notes: "" }] });
+    setForm({ clientId: "", priority: "normale", dueDate: "", notes: "", items: [{ description: "", quantity: 1, notes: "", photos: [] }] });
     setDialogOpen(true);
   }
 
@@ -175,13 +176,44 @@ const DemandesClientsPage = () => {
       priority: r.priority,
       dueDate: r.dueDate ? new Date(r.dueDate).toISOString().split("T")[0] : "",
       notes: r.notes,
-      items: r.items.length > 0 ? r.items.map((i) => ({ description: i.description, quantity: i.quantity, notes: i.notes })) : [{ description: "", quantity: 1, notes: "" }],
+      items: r.items.length > 0 ? r.items.map((i) => ({ description: i.description, quantity: i.quantity, notes: i.notes, photos: i.photos || [] })) : [{ description: "", quantity: 1, notes: "", photos: [] }],
     });
     setDialogOpen(true);
   }
 
   function addItem() {
-    setForm((f) => ({ ...f, items: [...f.items, { description: "", quantity: 1, notes: "" }] }));
+    setForm((f) => ({ ...f, items: [...f.items, { description: "", quantity: 1, notes: "", photos: [] }] }));
+  }
+
+  async function handlePhotoUpload(idx: number, file: File) {
+    const formData = new FormData();
+    formData.append("file", file);
+    const token = localStorage.getItem("senstock_token");
+    try {
+      const res = await fetch("/api/uploads", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      if (res.ok) {
+        const { url } = await res.json();
+        setForm((f) => ({
+          ...f,
+          items: f.items.map((item, i) =>
+            i === idx ? { ...item, photos: [...(item.photos || []), url] } : item
+          ),
+        }));
+      } else { toast.error("Erreur lors de l'upload"); }
+    } catch { toast.error("Erreur de connexion"); }
+  }
+
+  function removePhoto(itemIdx: number, photoIdx: number) {
+    setForm((f) => ({
+      ...f,
+      items: f.items.map((item, i) =>
+        i === itemIdx ? { ...item, photos: item.photos.filter((_, pi) => pi !== photoIdx) } : item
+      ),
+    }));
   }
 
   function removeItem(idx: number) {
@@ -515,6 +547,27 @@ const DemandesClientsPage = () => {
                           className="flex-1"
                         />
                       </div>
+                      {/* Photos */}
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {(item.photos || []).map((photo, pi) => (
+                          <div key={pi} className="relative">
+                            <img src={photo} alt="" className="h-14 w-14 rounded object-cover border border-border" />
+                            <button
+                              onClick={() => removePhoto(idx, pi)}
+                              className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-destructive text-white flex items-center justify-center"
+                            >
+                              <X className="h-2.5 w-2.5" />
+                            </button>
+                          </div>
+                        ))}
+                        <label className="h-14 w-14 rounded border border-dashed border-border flex flex-col items-center justify-center cursor-pointer text-muted-foreground hover:bg-muted/30 transition-colors">
+                          <Plus className="h-4 w-4" />
+                          <span className="text-[10px]">Photo</span>
+                          <input type="file" accept="image/*" className="hidden"
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) handlePhotoUpload(idx, f); e.target.value = ""; }}
+                          />
+                        </label>
+                      </div>
                     </div>
                     {form.items.length > 1 && (
                       <button onClick={() => removeItem(idx)} className="p-1 text-red-500 hover:bg-red-500/10 rounded">
@@ -570,6 +623,15 @@ const DemandesClientsPage = () => {
                       <span className="text-xs text-muted-foreground">x{item.quantity}</span>
                     </div>
                     {item.notes && <p className="text-xs text-muted-foreground mt-1">{item.notes}</p>}
+                    {item.photos && item.photos.length > 0 && (
+                      <div className="flex gap-2 mt-2 flex-wrap">
+                        {item.photos.map((photo, pi) => (
+                          <a key={pi} href={photo} target="_blank" rel="noopener noreferrer">
+                            <img src={photo} alt="" className="h-12 w-12 rounded object-cover border border-border hover:opacity-80" />
+                          </a>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

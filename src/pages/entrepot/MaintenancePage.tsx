@@ -1216,11 +1216,12 @@ export default function MaintenancePage() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    setReceiptOpen(true);
+                    const token = localStorage.getItem("senstock_token");
+                    window.open(`/api/print/maintenance/${selected._id || selected.id}?type=full&token=${token}`, "_blank");
                   }}
                 >
                   <Printer className="h-4 w-4 mr-1" />
-                  Reçu
+                  Imprimer
                 </Button>
               </div>
             </div>

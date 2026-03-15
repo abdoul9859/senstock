@@ -13,13 +13,12 @@ function getApiBase(): string {
     return `http://${host}:5000`;
   }
   if (!__DEV__) return "https://api.senstock.app";
-  // Android emulator → host via 10.0.2.2
-  if (Platform.OS === "android") return "http://10.0.2.2:5000";
-  // iOS simulator → localhost works
-  return "http://localhost:5000";
+  // Dev: try direct LAN first (faster, no tunnel instability)
+  return "http://192.168.1.9:5000";
 }
 
 const API_BASE = getApiBase();
+console.log("[API] Base URL:", API_BASE, "Platform:", Platform.OS);
 
 // ── Token helpers (web-safe: fallback to localStorage) ──
 
@@ -77,20 +76,30 @@ export async function apiFetch(
 ): Promise<Response> {
   const token = await getToken();
 
-  const res = await fetch(`${API_BASE}${path}`, {
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(options.headers as Record<string, string>),
-    },
-  });
+  const url = `${API_BASE}${path}`;
+  console.log("[API] Fetching:", url);
+  try {
+    const res = await fetch(url, {
+      ...options,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(options.headers as Record<string, string>),
+      },
+    });
 
-  if (res.status === 401 && _onUnauthorized) {
-    _onUnauthorized();
+    console.log("[API] Response:", res.status, path);
+
+    // Don't trigger logout on auth routes — let the caller handle the error
+    if (res.status === 401 && _onUnauthorized && !path.startsWith("/api/auth/")) {
+      _onUnauthorized();
+    }
+
+    return res;
+  } catch (err) {
+    console.error("[API] Fetch error:", url, err);
+    throw err;
   }
-
-  return res;
 }
 
 export { API_BASE };

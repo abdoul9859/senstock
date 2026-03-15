@@ -82,6 +82,7 @@ router.post("/", async (req, res) => {
             description: item.description || "",
             quantity: item.quantity || 1,
             notes: item.notes || "",
+            photos: item.photos || [],
           })),
         },
       },
@@ -124,6 +125,7 @@ router.put("/:id", async (req, res) => {
             description: item.description || "",
             quantity: item.quantity || 1,
             notes: item.notes || "",
+            photos: item.photos || [],
           })),
         });
       }

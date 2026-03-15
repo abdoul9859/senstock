@@ -11,6 +11,7 @@ import {
   Settings, User, Building2, FileText, ShoppingCart, Landmark,
   ArrowRight, Save, Shield, Loader2, Phone, Mail, Globe, MessageCircle,
   CreditCard, Check, Crown, Star, ExternalLink, AlertCircle, X, Users,
+  Download, Upload, Database, HardDrive,
 } from "lucide-react";
 
 const TOKEN_KEY = "senstock_token";
@@ -147,6 +148,187 @@ const emptyCompany: CompanyForm = {
   supportWhatsapp: "", supportEmail: "",
   whatsappEnabled: false, whatsappInstanceName: "", whatsappApiUrl: "", whatsappApiKey: "",
 };
+
+function BackupCard() {
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importType, setImportType] = useState<"senstock" | "legacy" | null>(null);
+  const [importResult, setImportResult] = useState<{ success: boolean; summary?: Record<string, number>; error?: string } | null>(null);
+  const fileRef = useState<HTMLInputElement | null>(null);
+
+  async function handleExport() {
+    setExporting(true);
+    try {
+      const res = await fetch("/api/backup/export", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("senstock_token")}` },
+      });
+      if (!res.ok) {
+        toast.error("Erreur lors de l'export");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `senstock_backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success("Backup exporte avec succes");
+    } catch {
+      toast.error("Erreur lors de l'export");
+    } finally {
+      setExporting(false);
+    }
+  }
+
+  async function handleImport(file: File, legacy: boolean) {
+    setImporting(true);
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const endpoint = legacy ? "/api/backup/import-legacy" : "/api/backup/import";
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${localStorage.getItem("senstock_token")}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setImportResult({ success: true, summary: data.summary || data.stats });
+        toast.success("Import termine avec succes");
+      } else {
+        setImportResult({ success: false, error: data.error || "Erreur d'import" });
+        toast.error(data.error || "Erreur d'import");
+      }
+    } catch {
+      setImportResult({ success: false, error: "Impossible de contacter le serveur" });
+      toast.error("Impossible de contacter le serveur");
+    } finally {
+      setImporting(false);
+    }
+  }
+
+  function onFileSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    handleImport(file, importType === "legacy");
+    e.target.value = "";
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <Database className="h-4 w-4 text-muted-foreground" />
+          Sauvegarde et importation
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Export */}
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Download className="h-4 w-4 text-blue-500" />
+            <span className="font-medium text-sm">Exporter les donnees</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Telecharge une sauvegarde complete de toutes vos donnees (produits, clients, factures, devis...) au format JSON.
+          </p>
+          <Button onClick={handleExport} disabled={exporting} size="sm" variant="outline">
+            {exporting ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Download className="h-4 w-4 mr-1" />}
+            Exporter le backup
+          </Button>
+        </div>
+
+        {/* Import */}
+        <div className="rounded-lg border border-border p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <Upload className="h-4 w-4 text-emerald-500" />
+            <span className="font-medium text-sm">Importer des donnees</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Importez des donnees depuis un backup SenStock ou depuis l'ancienne application.
+          </p>
+
+          <div className="flex flex-col gap-2 sm:flex-row">
+            <Button
+              size="sm"
+              variant={importType === "senstock" ? "default" : "outline"}
+              onClick={() => setImportType("senstock")}
+              disabled={importing}
+            >
+              <HardDrive className="h-4 w-4 mr-1" />
+              Depuis SenStock
+            </Button>
+            <Button
+              size="sm"
+              variant={importType === "legacy" ? "default" : "outline"}
+              onClick={() => setImportType("legacy")}
+              disabled={importing}
+            >
+              <Database className="h-4 w-4 mr-1" />
+              Depuis ancienne application
+            </Button>
+          </div>
+
+          {importType && (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                {importType === "senstock"
+                  ? "Selectionnez un fichier .json exporte depuis SenStock."
+                  : "Selectionnez un fichier .json ou .dump exporte depuis l'ancienne application."}
+              </p>
+              <label className="flex cursor-pointer items-center gap-2 rounded-md border border-dashed border-border px-4 py-3 text-sm hover:bg-accent transition-colors">
+                <Upload className="h-4 w-4 text-muted-foreground" />
+                <span className="text-muted-foreground">
+                  {importing ? "Importation en cours..." : "Choisir un fichier"}
+                </span>
+                <input
+                  type="file"
+                  accept=".json,.dump"
+                  onChange={onFileSelected}
+                  className="hidden"
+                  disabled={importing}
+                />
+                {importing && <Loader2 className="h-4 w-4 animate-spin ml-auto" />}
+              </label>
+            </div>
+          )}
+
+          {/* Import result */}
+          {importResult && (
+            <div className={`rounded-md p-3 text-sm ${importResult.success ? "bg-emerald-500/10 border border-emerald-500/30" : "bg-destructive/10 border border-destructive/30"}`}>
+              {importResult.success ? (
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 font-medium text-emerald-600">
+                    <Check className="h-4 w-4" />
+                    Import reussi
+                  </div>
+                  {importResult.summary && (
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-muted-foreground mt-2">
+                      {Object.entries(importResult.summary).map(([key, val]) => (
+                        <div key={key} className="flex justify-between">
+                          <span className="capitalize">{key}</span>
+                          <span className="font-medium text-foreground">{val}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2 text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  {importResult.error}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function ParametresGlobalPage() {
   const navigate = useNavigate();
@@ -838,6 +1020,9 @@ export default function ParametresGlobalPage() {
             </Button>
           </CardContent>
         </Card>
+
+        {/* Import / Export */}
+        <BackupCard />
 
         {/* Module settings links */}
         <Card>

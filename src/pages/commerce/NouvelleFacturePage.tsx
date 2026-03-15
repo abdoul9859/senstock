@@ -8,6 +8,8 @@ import {
   CreditCard, StickyNote, PenTool, Users, ArrowLeft, ArrowLeftRight, Zap, Info, GripVertical, Percent, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useDraftSync } from "@/hooks/useDraftSync";
+import { DraftBanner } from "@/components/DraftBanner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,6 +55,8 @@ interface Variant {
   condition: string;
   sold: boolean;
   price?: number;
+  labelId?: string;
+  label?: { id: string; name: string; color: string } | null;
 }
 
 interface Product {
@@ -82,6 +86,13 @@ interface ExchangeItemForm {
   quantity: string;
   notes: string;
   addToStock: boolean;
+  labelId: string;
+}
+
+interface ProductLabel {
+  id: string;
+  name: string;
+  color: string;
 }
 type PaymentMethod = "especes" | "mobile_money" | "virement" | "cheque" | "carte" | "autre";
 
@@ -137,6 +148,33 @@ const NouvelleFacturePage = () => {
   const isEditMode = !!editId;
   const [editLoaded, setEditLoaded] = useState(false);
 
+  // ---- Draft sync ----
+  const { otherDrafts, saveDraft, clearDraft, loadOtherDraft } = useDraftSync({
+    type: "invoice",
+    enabled: !isEditMode,
+  });
+
+  function resumeFromOtherDevice() {
+    const data = loadOtherDraft();
+    if (!data) return;
+    if (data.invoiceType) setInvoiceType(data.invoiceType as InvoiceType);
+    if (data.clientId) setClientId(data.clientId as string);
+    if (data.items && Array.isArray(data.items)) setItems(data.items as InvoiceItemForm[]);
+    if (data.exchangeItems && Array.isArray(data.exchangeItems)) setExchangeItems(data.exchangeItems as ExchangeItemForm[]);
+    if (data.notes) setNotes(data.notes as string);
+    if (data.showTax !== undefined) setShowTax(data.showTax as boolean);
+    if (data.taxRate) setTaxRate(data.taxRate as string);
+    if (data.paymentEnabled !== undefined) setPaymentEnabled(data.paymentEnabled as boolean);
+    if (data.paymentAmount) setPaymentAmount(data.paymentAmount as string);
+    if (data.paymentMethod) setPaymentMethod(data.paymentMethod as PaymentMethod);
+    if (data.warrantyEnabled !== undefined) setWarrantyEnabled(data.warrantyEnabled as boolean);
+    if (data.warrantyDuration) setWarrantyDuration(data.warrantyDuration as string);
+    if (data.warrantyDescription) setWarrantyDescription(data.warrantyDescription as string);
+    if (data.globalDiscountAmount) setGlobalDiscountAmount(data.globalDiscountAmount as string);
+    if (data.globalDiscountReason) setGlobalDiscountReason(data.globalDiscountReason as string);
+    toast.success("Brouillon repris depuis l'autre appareil");
+  }
+
   // ---- Form state ----
   const [invoiceType, setInvoiceType] = useState<InvoiceType>("facture");
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -170,6 +208,7 @@ const NouvelleFacturePage = () => {
   // ---- Data ----
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [availableLabels, setAvailableLabels] = useState<ProductLabel[]>([]);
 
   // ---- UI state ----
   const [clientPopoverOpen, setClientPopoverOpen] = useState(false);
@@ -178,11 +217,18 @@ const NouvelleFacturePage = () => {
   const [clientSaving, setClientSaving] = useState(false);
   const [productSearchOpen, setProductSearchOpen] = useState(false);
   const [productSearchQuery, setProductSearchQuery] = useState("");
+  const [quickProductOpen, setQuickProductOpen] = useState(false);
+  const [quickProductForm, setQuickProductForm] = useState({ name: "", categoryId: "", sellingPrice: "", purchasePrice: "", quantity: "1" });
+  const [quickProductSaving, setQuickProductSaving] = useState(false);
+  const [categories, setCategories] = useState<{ _id: string; name: string; hasVariants: boolean }[]>([]);
   const [exchangeSearchOpen, setExchangeSearchOpen] = useState(false);
   const [exchangeSearchQuery, setExchangeSearchQuery] = useState("");
   const [barcodeInput, setBarcodeInput] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [draftId, setDraftId] = useState<string | null>(null);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
   const [dueDatePopoverOpen, setDueDatePopoverOpen] = useState(false);
   const [paymentDatePopoverOpen, setPaymentDatePopoverOpen] = useState(false);
@@ -222,6 +268,14 @@ const NouvelleFacturePage = () => {
     fetchClients();
     fetchProducts();
     if (!isEditMode) fetchNextNumber("facture");
+    fetch("/api/product-labels", { headers: getHeaders() })
+      .then((r) => r.ok ? r.json() : [])
+      .then(setAvailableLabels)
+      .catch(() => {});
+    fetch("/api/categories", { headers: getHeaders() })
+      .then((r) => r.ok ? r.json() : [])
+      .then(setCategories)
+      .catch(() => {});
   }, [fetchClients, fetchProducts, fetchNextNumber, isEditMode]);
 
   // ---- Load existing invoice for edit mode ----
@@ -287,6 +341,7 @@ const NouvelleFacturePage = () => {
             quantity: String(ei.quantity ?? 1),
             notes: ei.notes || "",
             addToStock: ei.addToStock ?? false,
+            labelId: ei.labelId || "",
           })));
         }
         setEditLoaded(true);
@@ -474,6 +529,7 @@ const NouvelleFacturePage = () => {
       quantity: "1",
       notes: "",
       addToStock: true,
+      labelId: variant.labelId || "",
     }]);
     toast.success(`Echange: ${variant.serialNumber} ajoute`);
   }
@@ -489,6 +545,7 @@ const NouvelleFacturePage = () => {
       quantity: "1",
       notes: "",
       addToStock: false,
+      labelId: "",
     }]);
   }
 
@@ -577,6 +634,39 @@ const NouvelleFacturePage = () => {
       }
     } catch { /* ignore */ }
     setClientSaving(false);
+  }
+
+  // ---- Quick product creation ----
+
+  async function handleQuickCreateProduct() {
+    if (!quickProductForm.name.trim()) { toast.error("Le nom est requis"); return; }
+    if (!quickProductForm.categoryId) { toast.error("La catégorie est requise"); return; }
+    setQuickProductSaving(true);
+    try {
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: getHeaders(),
+        body: JSON.stringify({
+          name: quickProductForm.name.trim(),
+          category: quickProductForm.categoryId,
+          sellingPrice: parseFloat(quickProductForm.sellingPrice) || 0,
+          purchasePrice: parseFloat(quickProductForm.purchasePrice) || 0,
+          quantity: parseInt(quickProductForm.quantity) || 1,
+        }),
+      });
+      if (!res.ok) { const d = await res.json(); throw new Error(d.error || "Erreur"); }
+      const newProduct = await res.json();
+      setProducts((prev) => [newProduct, ...prev]);
+      // Auto-add to invoice
+      addSimpleProduct(newProduct);
+      setQuickProductOpen(false);
+      setProductSearchOpen(false);
+      setQuickProductForm({ name: "", categoryId: "", sellingPrice: "", purchasePrice: "", quantity: "1" });
+      toast.success(`"${newProduct.name}" créé et ajouté`);
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Erreur lors de la création");
+    }
+    setQuickProductSaving(false);
   }
 
   // ---- Signature canvas ----
@@ -668,6 +758,58 @@ const NouvelleFacturePage = () => {
     reader.readAsDataURL(file);
   }
 
+  // ---- Autosave draft ----
+
+  const triggerAutosave = useCallback(() => {
+    if (isEditMode) return; // Don't autosave when editing existing invoice
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(async () => {
+      if (items.length === 0 && exchangeItems.length === 0) return;
+      try {
+        const payload = {
+          type: invoiceType, client: clientId || undefined,
+          date: invoiceDate?.toISOString(), dueDate: dueDate?.toISOString(),
+          items: items.map((i, idx) => ({
+            type: i.type, productId: i.productId || undefined, variantId: i.variantId || undefined,
+            description: i.description, quantity: parseFloat(i.quantity) || 1,
+            unitPrice: parseFloat(i.unitPrice) || 0, purchasePrice: parseFloat(i.purchasePrice) || 0,
+            discountAmount: parseFloat(i.discountAmount) || 0, discountReason: i.discountReason,
+            total: getLineTotal(i), sortOrder: idx,
+          })),
+          subtotal: 0, total: 0, notes, lastEditedOn: "web",
+        };
+        const url = draftId ? `/api/invoices/${draftId}` : "/api/invoices";
+        const method = draftId ? "PUT" : "POST";
+        if (!draftId) payload.number = invoiceNumber || `DRAFT-${Date.now()}`;
+        const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+        if (res.ok) {
+          const data = await res.json();
+          if (!draftId) setDraftId(data._id || data.id);
+          setDraftSavedAt(new Date());
+        }
+      } catch { /* silent */ }
+    }, 2000);
+  }, [isEditMode, items, exchangeItems, invoiceType, clientId, invoiceDate, dueDate, notes, draftId, invoiceNumber]);
+
+  // Trigger autosave when relevant state changes
+  useEffect(() => {
+    triggerAutosave();
+  }, [items, exchangeItems, clientId, invoiceType, notes, triggerAutosave]);
+
+  // Sync full form state for cross-device
+  useEffect(() => {
+    if (isEditMode || items.length === 0) return;
+    saveDraft({
+      invoiceType, clientId, items, exchangeItems, notes,
+      showTax, taxRate, paymentEnabled, paymentAmount, paymentMethod: paymentMethod,
+      warrantyEnabled, warrantyDuration, warrantyDescription,
+      globalDiscountAmount, globalDiscountReason,
+    });
+  }, [isEditMode, saveDraft, invoiceType, clientId, items, exchangeItems, notes,
+    showTax, taxRate, paymentEnabled, paymentAmount, paymentMethod,
+    warrantyEnabled, warrantyDuration, warrantyDescription,
+    globalDiscountAmount, globalDiscountReason]);
+
   // ---- Save ----
 
   async function handleSave() {
@@ -729,6 +871,7 @@ const NouvelleFacturePage = () => {
           quantity: parseFloat(ei.quantity) || 1,
           notes: ei.notes,
           addToStock: ei.addToStock,
+          labelId: ei.labelId || undefined,
         })) : [],
       };
 
@@ -745,6 +888,7 @@ const NouvelleFacturePage = () => {
         return;
       }
       toast.success(isEditMode ? `Facture ${data.number} modifiee` : `Facture ${data.number} creee`);
+      clearDraft();
       navigate("/commerce/factures");
     } catch {
       setError("Impossible de contacter le serveur");
@@ -760,6 +904,9 @@ const NouvelleFacturePage = () => {
 
   return (
     <div className="pb-24 animate-fade-in">
+      {/* Draft sync banner */}
+      <DraftBanner drafts={otherDrafts} onResume={resumeFromOtherDevice} className="mb-4" />
+
       {/* Page header */}
       <div className="mb-6 flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/commerce/factures")}>
@@ -952,6 +1099,7 @@ const NouvelleFacturePage = () => {
                         <TableHead className="w-[100px] text-right">Prix</TableHead>
                         <TableHead className="w-[70px] text-center">Qte</TableHead>
                         <TableHead className="w-[150px]">Notes</TableHead>
+                        <TableHead className="w-[120px]">Étiquette</TableHead>
                         <TableHead className="w-[100px] text-center">Au stock</TableHead>
                         <TableHead className="w-[44px]" />
                       </TableRow>
@@ -1003,6 +1151,23 @@ const NouvelleFacturePage = () => {
                               placeholder="Note..."
                               className="h-8 text-xs"
                             />
+                          </TableCell>
+                          <TableCell>
+                            {availableLabels.length > 0 && (
+                              <select
+                                value={ei.labelId}
+                                onChange={(e) => updateExchangeItem(ei.id, { labelId: e.target.value })}
+                                className="h-8 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+                              >
+                                <option value="">— Aucune —</option>
+                                {availableLabels.map((lbl) => (
+                                  <option key={lbl.id} value={lbl.id}>{lbl.name}</option>
+                                ))}
+                              </select>
+                            )}
+                            {availableLabels.length === 0 && (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                           <TableCell className="text-center">
                             <Switch
@@ -1517,6 +1682,11 @@ const NouvelleFacturePage = () => {
             <div className="text-sm text-muted-foreground mr-2">
               Total: <span className="font-bold text-foreground">{formatFCFA(total)}</span>
             </div>
+            {!isEditMode && draftSavedAt && (
+              <span className="text-xs text-muted-foreground hidden sm:block">
+                Brouillon sauvegardé {draftSavedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+              </span>
+            )}
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Enregistrement..." : isEditMode ? "Sauvegarder" : "Enregistrer la facture"}
             </Button>
@@ -1573,6 +1743,60 @@ const NouvelleFacturePage = () => {
             <Button variant="outline" onClick={() => setClientDialogOpen(false)}>Annuler</Button>
             <Button onClick={handleCreateClient} disabled={clientSaving || !clientForm.name.trim()}>
               {clientSaving ? "Enregistrement..." : "Creer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Quick product creation */}
+      <Dialog open={quickProductOpen} onOpenChange={setQuickProductOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Nouveau produit rapide</DialogTitle>
+            <DialogDescription>Créer un produit simple et l'ajouter à la facture</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label>Nom *</Label>
+              <Input
+                value={quickProductForm.name}
+                onChange={(e) => setQuickProductForm((f) => ({ ...f, name: e.target.value }))}
+                placeholder="Nom du produit"
+                autoFocus
+              />
+            </div>
+            <div>
+              <Label>Catégorie *</Label>
+              <select
+                value={quickProductForm.categoryId}
+                onChange={(e) => setQuickProductForm((f) => ({ ...f, categoryId: e.target.value }))}
+                className="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              >
+                <option value="">— Choisir —</option>
+                {categories.filter((c) => !c.hasVariants).map((c) => (
+                  <option key={c._id} value={c._id}>{c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label>Prix de vente</Label>
+                <Input type="number" value={quickProductForm.sellingPrice}
+                  onChange={(e) => setQuickProductForm((f) => ({ ...f, sellingPrice: e.target.value }))}
+                  placeholder="0" />
+              </div>
+              <div>
+                <Label>Quantité</Label>
+                <Input type="number" value={quickProductForm.quantity}
+                  onChange={(e) => setQuickProductForm((f) => ({ ...f, quantity: e.target.value }))}
+                  placeholder="1" min="1" />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setQuickProductOpen(false)}>Annuler</Button>
+            <Button onClick={handleQuickCreateProduct} disabled={quickProductSaving}>
+              {quickProductSaving ? "Création..." : "Créer et ajouter"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1680,6 +1904,16 @@ const NouvelleFacturePage = () => {
                 );
               })
             )}
+          </div>
+          <div className="pt-3 border-t mt-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="w-full text-muted-foreground"
+              onClick={() => { setProductSearchOpen(false); setQuickProductOpen(true); }}
+            >
+              <Plus className="h-4 w-4 mr-2" /> Créer un nouveau produit
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

@@ -100,6 +100,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    // Try cached user first for instant render, then validate in background
+    const cachedUser = sessionStorage.getItem("senstock_user_cache");
+    if (cachedUser) {
+      try {
+        const { user: u, tenant: t } = JSON.parse(cachedUser);
+        setUser(u);
+        if (t) setTenant(t);
+        setLoading(false);
+      } catch { /* ignore */ }
+    }
+
     fetch("/api/auth/me", {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -110,13 +121,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return Promise.reject();
       })
       .then((data) => {
-        if (data === "refreshed") return; // Already set by tryRefreshToken
+        if (data === "refreshed") return;
         setUser(data.user);
         if (data.tenant) setTenant(data.tenant);
+        sessionStorage.setItem("senstock_user_cache", JSON.stringify({ user: data.user, tenant: data.tenant }));
       })
       .catch(() => {
         localStorage.removeItem(TOKEN_KEY);
         localStorage.removeItem(REFRESH_KEY);
+        sessionStorage.removeItem("senstock_user_cache");
       })
       .finally(() => setLoading(false));
   }, [tryRefreshToken]);

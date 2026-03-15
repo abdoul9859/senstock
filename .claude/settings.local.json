@@ -1,7 +1,7 @@
 {
   "permissions": {
     "allow": [
-      "Bash(docker compose up -d)"
+      "Bash(podman compose up -d)"
     ]
   }
 }

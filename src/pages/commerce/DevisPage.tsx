@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDraftSync } from "@/hooks/useDraftSync";
+import { DraftBanner } from "@/components/DraftBanner";
 import {
   FilePlus, Clock, CheckCircle, AlertTriangle, Plus,
   Eye, Pencil, Trash2, Send, Copy, XCircle, ArrowRightCircle,
@@ -60,6 +62,7 @@ type SortDir = "asc" | "desc";
 
 const DevisPage = () => {
   const navigate = useNavigate();
+  const { otherDrafts } = useDraftSync({ type: "devis" });
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>("date");
@@ -234,6 +237,11 @@ const DevisPage = () => {
 
   return (
     <div>
+      <DraftBanner
+        drafts={otherDrafts}
+        className="mb-4"
+        onResume={() => navigate("/commerce/devis/nouveau")}
+      />
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Devis</h2>

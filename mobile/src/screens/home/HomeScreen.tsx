@@ -285,8 +285,26 @@ export default function HomeScreen() {
         </DashboardCard>
       </Animated.View>
 
-      {/* ── Boutique ── */}
+      {/* ── Logistique ── */}
       <Animated.View style={{ opacity: fadeAnims[3], transform: [{ translateY: slideAnims[3] }] }}>
+        <DashboardCard
+          title="Logistique"
+          wsKey="logistique"
+          color={wsColor("logistique")}
+          icon={<Truck size={20} color={wsColor("logistique")} />}
+          onPress={() => nav.navigate("WorkspaceSections", { workspaceKey: "logistique" })}
+          colors={colors}
+        >
+          <KpiRow colors={colors} items={[
+            { label: "Fournisseurs", value: String(data.logistique.suppliers), color: wsColor("logistique") },
+            { label: "En transit", value: String(data.logistique.inTransit), color: colors.warning },
+            { label: "Livrees", value: String(data.logistique.delivered), color: colors.success },
+          ]} />
+        </DashboardCard>
+      </Animated.View>
+
+      {/* ── Boutique ── */}
+      <Animated.View style={{ opacity: fadeAnims[4], transform: [{ translateY: slideAnims[4] }] }}>
         <DashboardCard
           title="Boutique"
           wsKey="boutique"
@@ -304,7 +322,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ── Personnel ── */}
-      <Animated.View style={{ opacity: fadeAnims[4], transform: [{ translateY: slideAnims[4] }] }}>
+      <Animated.View style={{ opacity: fadeAnims[5], transform: [{ translateY: slideAnims[5] }] }}>
         <DashboardCard
           title="Personnel"
           wsKey="personnel"
@@ -322,7 +340,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ── Banque ── */}
-      <Animated.View style={{ opacity: fadeAnims[5], transform: [{ translateY: slideAnims[5] }] }}>
+      <Animated.View style={{ opacity: fadeAnims[6], transform: [{ translateY: slideAnims[6] }] }}>
         <DashboardCard
           title="Banque"
           wsKey="banque"
@@ -340,7 +358,7 @@ export default function HomeScreen() {
       </Animated.View>
 
       {/* ── Analytique ── */}
-      <Animated.View style={{ opacity: fadeAnims[6], transform: [{ translateY: slideAnims[6] }] }}>
+      <Animated.View style={{ opacity: fadeAnims[7], transform: [{ translateY: slideAnims[7] }] }}>
         <DashboardCard
           title="Analytique"
           wsKey="analytique"
@@ -353,24 +371,6 @@ export default function HomeScreen() {
             { label: "CA du mois", value: formatMoney(data.analytique.monthRevenue) + " F", color: colors.success },
             { label: "Depenses", value: formatMoney(data.analytique.monthExpenses) + " F", color: colors.destructive },
             { label: "Marge", value: data.analytique.margin + "%", color: data.analytique.margin >= 0 ? colors.success : colors.destructive },
-          ]} />
-        </DashboardCard>
-      </Animated.View>
-
-      {/* ── Logistique ── */}
-      <Animated.View style={{ opacity: fadeAnims[7], transform: [{ translateY: slideAnims[7] }] }}>
-        <DashboardCard
-          title="Logistique"
-          wsKey="logistique"
-          color={wsColor("logistique")}
-          icon={<Truck size={20} color={wsColor("logistique")} />}
-          onPress={() => nav.navigate("WorkspaceSections", { workspaceKey: "logistique" })}
-          colors={colors}
-        >
-          <KpiRow colors={colors} items={[
-            { label: "Fournisseurs", value: String(data.logistique.suppliers), color: wsColor("logistique") },
-            { label: "En transit", value: String(data.logistique.inTransit), color: colors.warning },
-            { label: "Livrees", value: String(data.logistique.delivered), color: colors.success },
           ]} />
         </DashboardCard>
       </Animated.View>

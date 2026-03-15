@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { useDraftSync } from "@/hooks/useDraftSync";
+import { DraftBanner } from "@/components/DraftBanner";
 import {
   FileText, Clock, CheckCircle, AlertTriangle, Plus, Download,
   Eye, Pencil, Printer, Trash2, Send, Copy, XCircle, Undo2, Banknote,
@@ -79,6 +81,7 @@ type SortDir = "asc" | "desc";
 
 const FacturesPage = () => {
   const navigate = useNavigate();
+  const { otherDrafts } = useDraftSync({ type: "invoice" });
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortField, setSortField] = useState<SortField>("date");
@@ -385,6 +388,11 @@ const FacturesPage = () => {
 
   return (
     <div>
+      <DraftBanner
+        drafts={otherDrafts}
+        className="mb-4"
+        onResume={() => navigate("/commerce/factures/nouveau")}
+      />
       <div className="mb-6 flex items-center justify-between">
         <div>
           <h2 className="text-xl font-semibold text-foreground">Factures</h2>

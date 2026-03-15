@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Boxes, Check } from "lucide-react";
+import { toast } from "sonner";
 import { useAuth, TenantInfo } from "@/contexts/AuthContext";
 import { PlanType } from "@/config/planPermissions";
 import { Progress } from "@/components/ui/progress";
@@ -51,11 +52,30 @@ export default function OnboardingPage() {
     }
   }, [tenant, navigate]);
 
-  // Resume at the right step based on tenant progress
+  // Resume at the right step based on tenant progress + pre-populate saved settings
   useEffect(() => {
     if (tenant && !tenant.onboardingCompleted) {
       setCurrentStep(Math.min(tenant.onboardingStep, 3));
       if (tenant.plan !== "free") setSelectedPlan(tenant.plan as PlanType);
+      // Load saved invoice settings if user is resuming at step 2+
+      if (tenant.onboardingStep >= 2) {
+        const token = localStorage.getItem(TOKEN_KEY);
+        fetch("/api/commerce-settings", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then((r) => r.ok ? r.json() : null)
+          .then((s) => {
+            if (s) {
+              setInvoiceData({
+                invoiceTemplate: s.invoiceTemplate || "lbp",
+                accentColor: s.accentColor || "#0070c0",
+                businessName: s.businessName || "",
+                businessAddress: s.businessAddress || "",
+              });
+            }
+          })
+          .catch(() => {});
+      }
     }
   }, [tenant]);
 
@@ -79,7 +99,9 @@ export default function OnboardingPage() {
       },
       body: body ? JSON.stringify(body) : undefined,
     });
-    return res.json();
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || "Erreur serveur");
+    return data;
   }
 
   async function handlePlanNext() {
@@ -87,14 +109,13 @@ export default function OnboardingPage() {
     try {
       const result = await apiCall("/api/onboarding/plan", "PUT", { plan: selectedPlan });
       if (result.stripeUrl) {
-        // Redirect to Stripe for paid plans
         window.location.href = result.stripeUrl;
         return;
       }
       await refreshTenant();
       setCurrentStep(1);
-    } catch {
-      // error
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la sauvegarde du plan");
     } finally {
       setLoading(false);
     }
@@ -106,8 +127,8 @@ export default function OnboardingPage() {
       await apiCall("/api/onboarding/company", "PUT", companyData);
       await refreshTenant();
       setCurrentStep(2);
-    } catch {
-      // error
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la sauvegarde des informations");
     } finally {
       setLoading(false);
     }
@@ -119,8 +140,8 @@ export default function OnboardingPage() {
       await apiCall("/api/onboarding/invoice", "PUT", invoiceData);
       await refreshTenant();
       setCurrentStep(3);
-    } catch {
-      // error
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la sauvegarde du modèle de facture");
     } finally {
       setLoading(false);
     }
@@ -132,8 +153,8 @@ export default function OnboardingPage() {
       await apiCall("/api/onboarding/complete", "POST");
       await refreshTenant();
       navigate("/entrepot/dashboard", { replace: true });
-    } catch {
-      // error
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erreur lors de la finalisation");
     } finally {
       setLoading(false);
     }

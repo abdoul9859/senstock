@@ -14,6 +14,7 @@ import BonLivraisonListScreen from "../screens/commerce/BonLivraisonListScreen";
 import BonLivraisonDetailScreen from "../screens/commerce/BonLivraisonDetailScreen";
 import CreancesScreen from "../screens/commerce/CreancesScreen";
 import AchatsQuotidiensScreen from "../screens/commerce/AchatsQuotidiensScreen";
+import ScanInvoiceScreen from "../screens/commerce/ScanInvoiceScreen";
 
 export type CommerceStackParamList = {
   CommerceDashboard: undefined;
@@ -29,6 +30,7 @@ export type CommerceStackParamList = {
   BonLivraisonDetail: { deliveryNoteId: string };
   Creances: undefined;
   AchatsQuotidiens: undefined;
+  ScanInvoice: undefined;
 };
 
 const Stack = createNativeStackNavigator<CommerceStackParamList>();
@@ -108,6 +110,11 @@ export default function CommerceStack() {
         name="AchatsQuotidiens"
         component={AchatsQuotidiensScreen}
         options={{ title: "Achats quotidiens" }}
+      />
+      <Stack.Screen
+        name="ScanInvoice"
+        component={ScanInvoiceScreen}
+        options={{ title: "Scanner facture" }}
       />
     </Stack.Navigator>
   );

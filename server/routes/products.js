@@ -31,7 +31,8 @@ function addIdDeep(product) {
 const productIncludes = {
   category: true,
   supplier: true,
-  variants: { include: { supplier: true } },
+  variants: { include: { supplier: true, label: true } },
+  labels: { include: { label: true } },
 };
 
 // Helper: log a stock movement (fire-and-forget)
@@ -42,8 +43,18 @@ function logMovement(data, tenantId) {
 // GET /api/products — list all (optimized payload for list view)
 router.get("/", async (req, res) => {
   try {
+    // Filtre par étiquettes: ?labelIds=id1,id2
+    const { labelIds } = req.query;
+    const where = { deleted: false, tenantId: req.tenantId };
+    if (labelIds) {
+      const ids = labelIds.split(",").filter(Boolean);
+      if (ids.length > 0) {
+        where.labels = { some: { labelId: { in: ids } } };
+      }
+    }
+
     const products = await prisma.product.findMany({
-      where: { deleted: false, tenantId: req.tenantId },
+      where,
       select: {
         id: true,
         name: true,
@@ -69,6 +80,13 @@ router.get("/", async (req, res) => {
             condition: true,
             sold: true,
             price: true,
+            labelId: true,
+            label: { select: { id: true, name: true, color: true } },
+          },
+        },
+        labels: {
+          select: {
+            label: { select: { id: true, name: true, color: true } },
           },
         },
       },
@@ -83,7 +101,7 @@ router.get("/", async (req, res) => {
 // POST /api/products — create
 router.post("/", async (req, res) => {
   try {
-    const { name, description, category, brand, model, purchasePrice, costPrice, sellingPrice, supplier, notes, image, quantity, attributes, variants } = req.body;
+    const { name, description, category, brand, model, purchasePrice, costPrice, sellingPrice, supplier, notes, image, quantity, attributes, variants, labelIds } = req.body;
 
     if (!name || !name.trim()) {
       return res.status(400).json({ error: "Le nom est requis" });
@@ -117,9 +135,13 @@ router.post("/", async (req, res) => {
             sold: !!v.sold,
             price: v.price ?? undefined,
             supplierId: v.supplier || v.supplierId || undefined,
+            labelId: v.labelId || undefined,
             attributes: v.attributes || {},
           })),
         },
+        labels: labelIds && labelIds.length > 0 ? {
+          create: labelIds.map((lid) => ({ labelId: lid })),
+        } : undefined,
       },
       include: productIncludes,
     });
@@ -161,7 +183,7 @@ router.post("/", async (req, res) => {
 // PUT /api/products/:id — update
 router.put("/:id", async (req, res) => {
   try {
-    const { name, description, category, brand, model, purchasePrice, costPrice, sellingPrice, supplier, notes, image, quantity, attributes, variants } = req.body;
+    const { name, description, category, brand, model, purchasePrice, costPrice, sellingPrice, supplier, notes, image, quantity, attributes, variants, labelIds } = req.body;
 
     if (name !== undefined && (!name || !name.trim())) {
       return res.status(400).json({ error: "Le nom est requis" });
@@ -205,9 +227,21 @@ router.put("/:id", async (req, res) => {
           soldInvoiceNumber: v.soldInvoiceNumber || "",
           price: v.price ?? undefined,
           supplierId: v.supplier || v.supplierId || undefined,
+          labelId: v.labelId || undefined,
           attributes: v.attributes || {},
         })),
       };
+    }
+
+    // Sync labels if provided
+    if (labelIds !== undefined) {
+      await prisma.productLabelItem.deleteMany({ where: { productId: req.params.id } });
+      if (labelIds.length > 0) {
+        await prisma.productLabelItem.createMany({
+          data: labelIds.map((lid) => ({ productId: req.params.id, labelId: lid })),
+          skipDuplicates: true,
+        });
+      }
     }
 
     const product = await prisma.product.update({
@@ -547,6 +581,41 @@ router.get("/:id/history", async (req, res) => {
     });
 
     res.json(logs);
+  } catch {
+    res.status(500).json({ error: "Erreur serveur" });
+  }
+});
+
+// PATCH /api/products/:id/variants/:variantId/label — assigner/retirer une étiquette sur une variante
+router.patch("/:id/variants/:variantId/label", async (req, res) => {
+  try {
+    const { labelId } = req.body; // null pour retirer l'étiquette
+    // Vérifier que le produit appartient au tenant
+    const product = await prisma.product.findFirst({
+      where: { id: req.params.id, tenantId: req.tenantId, deleted: false },
+    });
+    if (!product) return res.status(404).json({ error: "Produit non trouvé" });
+
+    // Vérifier que la variante appartient au produit
+    const variant = await prisma.variant.findFirst({
+      where: { id: req.params.variantId, productId: req.params.id },
+    });
+    if (!variant) return res.status(404).json({ error: "Variante non trouvée" });
+
+    // Si labelId fourni, vérifier qu'il appartient au tenant
+    if (labelId) {
+      const label = await prisma.productLabel.findFirst({
+        where: { id: labelId, tenantId: req.tenantId },
+      });
+      if (!label) return res.status(404).json({ error: "Étiquette non trouvée" });
+    }
+
+    const updated = await prisma.variant.update({
+      where: { id: req.params.variantId },
+      data: { labelId: labelId || null },
+      include: { label: true },
+    });
+    res.json({ ...updated, _id: updated.id });
   } catch {
     res.status(500).json({ error: "Erreur serveur" });
   }

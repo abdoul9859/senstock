@@ -7,6 +7,7 @@ import ProductDetailScreen from "../screens/entrepot/ProductDetailScreen";
 import ProductFormScreen from "../screens/entrepot/ProductFormScreen";
 import CategoriesScreen from "../screens/entrepot/CategoriesScreen";
 import MouvementsScreen from "../screens/entrepot/MouvementsScreen";
+import LabelsScreen from "../screens/entrepot/LabelsScreen";
 
 export type EntrepotStackParamList = {
   EntrepotDashboard: undefined;
@@ -15,6 +16,7 @@ export type EntrepotStackParamList = {
   ProductForm: { productId?: string } | undefined;
   Categories: undefined;
   Mouvements: undefined;
+  Labels: undefined;
 };
 
 const Stack = createNativeStackNavigator<EntrepotStackParamList>();
@@ -61,6 +63,11 @@ export default function EntrepotStack() {
         name="Mouvements"
         component={MouvementsScreen}
         options={{ title: "Mouvements" }}
+      />
+      <Stack.Screen
+        name="Labels"
+        component={LabelsScreen}
+        options={{ title: "Étiquettes" }}
       />
     </Stack.Navigator>
   );

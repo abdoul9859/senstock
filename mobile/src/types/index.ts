@@ -88,7 +88,7 @@ export interface Supplier {
 // ── Invoices ──
 
 export type InvoiceType = "facture" | "proforma" | "avoir" | "echange" | "vente_flash";
-export type InvoiceStatus = "impayee" | "partielle" | "payee" | "annulee";
+export type InvoiceStatus = "impayee" | "partielle" | "payee" | "annulee" | "brouillon";
 
 export interface InvoiceItem {
   _id: string;
@@ -135,7 +135,9 @@ export interface Invoice {
   };
   notes?: string;
   signature?: string;
+  lastEditedOn?: "web" | "mobile";
   createdAt: string;
+  updatedAt?: string;
 }
 
 // ── Employees ──

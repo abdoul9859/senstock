@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -12,11 +12,14 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import type { RouteProp } from "@react-navigation/native";
-import { Search, Plus, Trash2, User, FileText, Briefcase } from "lucide-react-native";
+import { Search, Plus, Trash2, User, FileText, Briefcase, Barcode } from "lucide-react-native";
+import BarcodeScanner from "../../components/BarcodeScanner";
 import { showAlert } from "../../utils/alert";
 import { apiFetch } from "../../config/api";
 import { spacing, fontSize, borderRadius } from "../../config/theme";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useDraftSync } from "../../hooks/useDraftSync";
+import DraftBanner from "../../components/DraftBanner";
 import type { Client, Product } from "../../types";
 import type { AppStackParamList } from "../../navigation/AppStack";
 
@@ -66,6 +69,35 @@ export default function CreateInvoiceScreen() {
   const route = useRoute<RouteDef>();
   const editingId = route.params?.invoiceId;
 
+  // Draft sync
+  const { otherDrafts, saveDraft, clearDraft, loadOtherDraft } = useDraftSync({
+    type: "invoice",
+    enabled: !editingId,
+  });
+
+  function resumeFromOtherDevice() {
+    const data = loadOtherDraft();
+    if (!data) return;
+    if (data.invoiceType) setInvoiceType(data.invoiceType as InvoiceType);
+    if (data.items && Array.isArray(data.items)) setItems(data.items as any[]);
+    if (data.exchangeItems && Array.isArray(data.exchangeItems)) setExchangeItems(data.exchangeItems as any[]);
+    if (data.notes) setNotes(data.notes as string);
+    if (data.showTax !== undefined) setShowTax(data.showTax as boolean);
+    if (data.taxRate) setTaxRate(data.taxRate as string);
+    if (data.paymentEnabled !== undefined) setPaymentEnabled(data.paymentEnabled as boolean);
+    if (data.paymentAmount) setPaymentAmount(String(data.paymentAmount));
+    if (data.paymentMethod) setPaymentMethod(data.paymentMethod as PaymentMethod);
+    if (data.warrantyEnabled !== undefined) setWarrantyEnabled(data.warrantyEnabled as boolean);
+    if (data.warrantyDuration) setWarrantyDuration(data.warrantyDuration as string);
+    if (data.warrantyDescription) setWarrantyDescription(data.warrantyDescription as string);
+    // Resolve client
+    if (data.clientId) {
+      const client = clients.find((c) => c._id === data.clientId);
+      if (client) setSelectedClient(client);
+    }
+    showAlert("Reprise", "Brouillon repris depuis l'autre appareil");
+  }
+
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +113,7 @@ export default function CreateInvoiceScreen() {
   const [items, setItems] = useState<InvoiceItem[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [showProductPicker, setShowProductPicker] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Exchange items (for "echange" type)
   const [exchangeItems, setExchangeItems] = useState<InvoiceItem[]>([]);
@@ -109,6 +142,12 @@ export default function CreateInvoiceScreen() {
 
   // Notes
   const [notes, setNotes] = useState("");
+
+  // Autosave draft state
+  const [draftId, setDraftId] = useState<string | null>(editingId || null);
+  const [draftSavedAt, setDraftSavedAt] = useState<Date | null>(null);
+  const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isAutosaving = useRef(false);
 
   useEffect(() => {
     const fetches: Promise<any>[] = [
@@ -232,6 +271,106 @@ export default function CreateInvoiceScreen() {
     }
   }, [paymentEnabled, total]);
 
+  // ── Autosave draft ──
+
+  const buildDraftBody = useCallback((): Record<string, unknown> => {
+    const body: Record<string, unknown> = {
+      type: invoiceType,
+      status: "brouillon",
+      date: invoiceDate,
+      dueDate: dueDate || undefined,
+      items: items.map((i) => ({
+        type: i.type,
+        productId: i.productId,
+        variantId: i.variantId,
+        description: i.description,
+        quantity: i.quantity,
+        unitPrice: i.unitPrice,
+        purchasePrice: i.purchasePrice,
+        discountAmount: i.discountAmount || 0,
+        discountReason: i.discountReason || "",
+        total: i.unitPrice * i.quantity - (i.discountAmount || 0),
+      })),
+      subtotal,
+      discountAmount: invoiceDiscount,
+      discountReason: invoiceDiscountReason || "",
+      showTax,
+      taxRate: showTax ? parseFloat(taxRate) : 0,
+      taxAmount,
+      total,
+      payment: {
+        enabled: paymentEnabled,
+        amount: paymentEnabled ? parseFloat(paymentAmount) : 0,
+        method: paymentEnabled ? paymentMethod : undefined,
+        date: paymentEnabled ? paymentDate : undefined,
+      },
+      warranty: {
+        enabled: warrantyEnabled,
+        duration: warrantyEnabled ? warrantyDuration : undefined,
+        description: warrantyEnabled ? warrantyText : undefined,
+      },
+      notes: notes || undefined,
+      lastEditedOn: "mobile",
+      exchangeItems: invoiceType === "echange" ? exchangeItems.map((i) => ({
+        description: i.description,
+        productId: i.productId,
+        variantId: i.variantId,
+        price: i.unitPrice,
+        quantity: i.quantity,
+        addToStock: true,
+      })) : undefined,
+    };
+    if (invoiceType !== "vente_flash" && selectedClient) {
+      body.client = selectedClient._id;
+    }
+    return body;
+  }, [invoiceType, invoiceDate, dueDate, items, subtotal, invoiceDiscount,
+    invoiceDiscountReason, showTax, taxRate, taxAmount, total,
+    paymentEnabled, paymentAmount, paymentMethod, paymentDate,
+    warrantyEnabled, warrantyDuration, warrantyText, notes,
+    exchangeItems, selectedClient]);
+
+  const triggerAutosave = useCallback(() => {
+    if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    autosaveTimer.current = setTimeout(async () => {
+      if (items.length === 0 && exchangeItems.length === 0) return;
+      if (saving || isAutosaving.current) return;
+      isAutosaving.current = true;
+      try {
+        const body = buildDraftBody();
+        const url = draftId ? `/api/invoices/${draftId}` : "/api/invoices";
+        const method = draftId ? "PUT" : "POST";
+        const res = await apiFetch(url, { method, body: JSON.stringify(body) });
+        if (res.ok) {
+          const data = await res.json();
+          if (!draftId) setDraftId(data._id || data.id);
+          setDraftSavedAt(new Date());
+        }
+      } catch { /* silent */ }
+      finally { isAutosaving.current = false; }
+    }, 3000);
+  }, [items, exchangeItems, saving, draftId, buildDraftBody]);
+
+  // Trigger autosave when relevant form state changes
+  useEffect(() => {
+    triggerAutosave();
+    return () => { if (autosaveTimer.current) clearTimeout(autosaveTimer.current); };
+  }, [items, exchangeItems, selectedClient, invoiceType, notes, invoiceDate,
+    dueDate, showTax, taxRate, paymentEnabled, paymentAmount, warrantyEnabled,
+    invoiceDiscountEnabled, invoiceDiscountAmount, triggerAutosave]);
+
+  // Sync full form state for cross-device
+  useEffect(() => {
+    if (editingId || items.length === 0) return;
+    saveDraft({
+      invoiceType, clientId: selectedClient?._id, items, exchangeItems, notes,
+      showTax, taxRate, paymentEnabled, paymentAmount, paymentMethod,
+      warrantyEnabled, warrantyDuration, warrantyDescription: warrantyText,
+    });
+  }, [editingId, saveDraft, invoiceType, selectedClient, items, exchangeItems, notes,
+    showTax, taxRate, paymentEnabled, paymentAmount, paymentMethod,
+    warrantyEnabled, warrantyDuration, warrantyText]);
+
   // ── Item helpers ──
 
   function addProduct(product: Product) {
@@ -284,6 +423,22 @@ export default function CreateInvoiceScreen() {
     ]);
     setShowProductPicker(false);
     setProductSearch("");
+  }
+
+  function handleBarcodeScan(data: string) {
+    setShowScanner(false);
+    const q = data.toLowerCase();
+    // Search across all products
+    for (const product of products) {
+      if (product.barcode?.toLowerCase() === q) { addProduct(product); return; }
+      for (const v of (product.variants || [])) {
+        if (!v.sold && (v.barcode?.toLowerCase() === q || v.serialNumber?.toLowerCase() === q)) {
+          addVariant(product, v); return;
+        }
+      }
+    }
+    setProductSearch(data);
+    setShowProductPicker(true);
   }
 
   function addService() {
@@ -498,6 +653,7 @@ export default function CreateInvoiceScreen() {
           description: warrantyEnabled ? warrantyText : undefined,
         },
         notes: notes || undefined,
+        lastEditedOn: "mobile",
         exchangeItems: invoiceType === "echange" ? exchangeItems.map((i) => ({
           description: i.description,
           productId: i.productId,
@@ -512,14 +668,17 @@ export default function CreateInvoiceScreen() {
         body.client = selectedClient._id;
       }
 
-      const url = editingId ? `/api/invoices/${editingId}` : "/api/invoices";
-      const method = editingId ? "PUT" : "POST";
+      // Use draftId if we have one from autosave, otherwise editingId
+      const invoiceIdToUse = editingId || draftId;
+      const url = invoiceIdToUse ? `/api/invoices/${invoiceIdToUse}` : "/api/invoices";
+      const method = invoiceIdToUse ? "PUT" : "POST";
       const res = await apiFetch(url, {
         method,
         body: JSON.stringify(body),
       });
 
       if (res.ok) {
+        clearDraft();
         nav.goBack();
       } else {
         const err = await res.json().catch(() => null);
@@ -580,11 +739,24 @@ export default function CreateInvoiceScreen() {
   // ── Render ──
 
   return (
+    <View style={[styles.container, { backgroundColor: colors.background }]}>
     <ScrollView
-      style={[styles.container, { backgroundColor: colors.background }]}
+      style={{ flex: 1 }}
       contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled"
     >
+      {/* ═══ Cross-device draft banner ═══ */}
+      <DraftBanner drafts={otherDrafts} onResume={resumeFromOtherDevice} />
+
+      {/* ═══ Draft autosave indicator ═══ */}
+      {draftSavedAt && (
+        <View style={styles.draftBanner}>
+          <Text style={[styles.draftBannerText, { color: colors.textMuted }]}>
+            Brouillon sauvegarde a {draftSavedAt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
+          </Text>
+        </View>
+      )}
+
       {/* ═══ 1. Invoice Type ═══ */}
       <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
         Type de document
@@ -744,9 +916,14 @@ export default function CreateInvoiceScreen() {
         >
           <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: spacing.sm }}>
             <Text style={[styles.pickerTitle, { color: colors.text }]}>Ajouter un article</Text>
-            <TouchableOpacity onPress={() => { setShowProductPicker(false); setProductSearch(""); }}>
-              <Trash2 size={16} color={colors.textDimmed} />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+              <TouchableOpacity onPress={() => setShowScanner(true)}>
+                <Barcode size={20} color={colors.primary} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => { setShowProductPicker(false); setProductSearch(""); }}>
+                <Trash2 size={16} color={colors.textDimmed} />
+              </TouchableOpacity>
+            </View>
           </View>
           <View
             style={[
@@ -1363,6 +1540,14 @@ export default function CreateInvoiceScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+
+    <BarcodeScanner
+      visible={showScanner}
+      onClose={() => setShowScanner(false)}
+      onScanned={handleBarcodeScan}
+      title="Scanner un produit"
+    />
+    </View>
   );
 }
 
@@ -1598,5 +1783,16 @@ const styles = StyleSheet.create({
   submitText: {
     fontSize: fontSize.lg,
     fontWeight: "600",
+  },
+  draftBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: spacing.xs,
+    marginBottom: spacing.sm,
+  },
+  draftBannerText: {
+    fontSize: fontSize.xs,
+    fontStyle: "italic",
   },
 });

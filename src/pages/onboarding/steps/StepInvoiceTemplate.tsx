@@ -59,7 +59,7 @@ export default function StepInvoiceTemplate({ data, onChange, onNext, onBack, lo
 
   // Build settings object for template rendering
   const previewSettings: CommerceSettings = {
-    invoiceTemplate: data.invoiceTemplate as "lbp" | "techzone" | "minimal",
+    invoiceTemplate: data.invoiceTemplate as "lbp" | "techzone" | "minimal" | "classique",
     accentColor: data.accentColor,
     businessName: data.businessName || "Mon Entreprise",
     businessAddress: data.businessAddress || "Dakar, Sénégal",
@@ -119,7 +119,7 @@ export default function StepInvoiceTemplate({ data, onChange, onNext, onBack, lo
                     >
                       <TemplateComponent
                         invoice={previewInvoice}
-                        settings={{ ...previewSettings, invoiceTemplate: tmpl.id as "lbp" | "techzone" | "minimal" }}
+                        settings={{ ...previewSettings, invoiceTemplate: tmpl.id as "lbp" | "techzone" | "minimal" | "classique" }}
                         currency=" FCFA"
                       />
                     </div>

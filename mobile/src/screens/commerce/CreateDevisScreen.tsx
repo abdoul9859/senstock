@@ -17,6 +17,8 @@ import { showAlert } from "../../utils/alert";
 import { apiFetch } from "../../config/api";
 import { spacing, fontSize, borderRadius } from "../../config/theme";
 import { useTheme } from "../../contexts/ThemeContext";
+import { useDraftSync } from "../../hooks/useDraftSync";
+import DraftBanner from "../../components/DraftBanner";
 import type { Client, Product, ProductVariant } from "../../types";
 import type { AppStackParamList } from "../../navigation/AppStack";
 
@@ -40,6 +42,24 @@ export default function CreateDevisScreen() {
   const route = useRoute<RouteDef>();
   const editId = route.params?.quoteId;
 
+  // Draft sync
+  const { otherDrafts, saveDraft, clearDraft, loadOtherDraft } = useDraftSync({ type: "devis", enabled: !editId });
+
+  function resumeFromOtherDevice() {
+    const data = loadOtherDraft();
+    if (!data) return;
+    if (data.clientId && clients.length > 0) {
+      const client = clients.find((c) => c._id === data.clientId);
+      if (client) { setSelectedClient(client); setShowClientPicker(false); }
+    }
+    if (data.items && Array.isArray(data.items)) setItems(data.items as DevisItem[]);
+    if (data.notes) setNotes(data.notes as string);
+    if (data.showTax !== undefined) setShowTax(data.showTax as boolean);
+    if (data.taxRate) setTaxRate(data.taxRate as string);
+    if (data.validityDate) setValidityDate(data.validityDate as string);
+    showAlert("Brouillon restaure", "Le brouillon a ete restaure depuis un autre appareil.");
+  }
+
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -57,6 +77,15 @@ export default function CreateDevisScreen() {
   const [taxRate, setTaxRate] = useState("18");
   const [notes, setNotes] = useState("");
   const [autoNumber, setAutoNumber] = useState("");
+
+  // Sync full form state for cross-device
+  useEffect(() => {
+    if (editId || items.length === 0) return;
+    saveDraft({
+      clientId: selectedClient?._id, items, notes,
+      showTax, taxRate, validityDate,
+    });
+  }, [editId, saveDraft, selectedClient, items, notes, showTax, taxRate, validityDate]);
 
   useEffect(() => {
     const promises: Promise<any>[] = [
@@ -221,6 +250,7 @@ export default function CreateDevisScreen() {
       });
 
       if (res.ok) {
+        clearDraft();
         nav.goBack();
       } else {
         const err = await res.json().catch(() => null);
@@ -304,6 +334,7 @@ export default function CreateDevisScreen() {
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: colors.background }]} contentContainerStyle={styles.content}>
+      {!editId && <DraftBanner drafts={otherDrafts} onResume={resumeFromOtherDevice} />}
       {/* Auto number */}
       {autoNumber && !editId ? (
         <View style={[styles.numberBanner, { backgroundColor: colors.card, borderColor: colors.border }]}>

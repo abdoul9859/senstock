@@ -8,16 +8,23 @@ import {
   StyleSheet,
   ActivityIndicator,
   RefreshControl,
+  ScrollView,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Search, Plus } from "lucide-react-native";
+import { Search, Plus, Tag } from "lucide-react-native";
 import ProductCard from "../../components/product/ProductCard";
 import { apiFetch } from "../../config/api";
 import { spacing, fontSize, borderRadius } from "../../config/theme";
 import { useTheme } from "../../contexts/ThemeContext";
 import type { Product } from "../../types";
 import type { AppStackParamList } from "../../navigation/AppStack";
+
+interface ProductLabel {
+  id: string;
+  name: string;
+  color: string;
+}
 
 type Nav = NativeStackNavigationProp<AppStackParamList>;
 
@@ -28,6 +35,15 @@ export default function ProductListScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [search, setSearch] = useState("");
+  const [availableLabels, setAvailableLabels] = useState<ProductLabel[]>([]);
+  const [filterLabelIds, setFilterLabelIds] = useState<string[]>([]);
+
+  const fetchLabels = useCallback(async () => {
+    try {
+      const res = await apiFetch("/api/product-labels");
+      if (res.ok) setAvailableLabels(await res.json());
+    } catch { /* ignore */ }
+  }, []);
 
   const fetchProducts = useCallback(async () => {
     try {
@@ -46,7 +62,8 @@ export default function ProductListScreen() {
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+    fetchLabels();
+  }, [fetchProducts, fetchLabels]);
 
   useEffect(() => {
     const unsubscribe = nav.addListener("focus", () => {
@@ -61,13 +78,19 @@ export default function ProductListScreen() {
   }, [fetchProducts]);
 
   const filtered = products.filter((p) => {
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      p.name.toLowerCase().includes(q) ||
-      (p.brand && p.brand.toLowerCase().includes(q)) ||
-      (p.model && p.model.toLowerCase().includes(q))
-    );
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      const match =
+        p.name.toLowerCase().includes(q) ||
+        (p.brand && p.brand.toLowerCase().includes(q)) ||
+        (p.model && p.model.toLowerCase().includes(q));
+      if (!match) return false;
+    }
+    if (filterLabelIds.length > 0) {
+      const pLabelIds = ((p as any).labels || []).map((l: any) => l.label?.id);
+      if (!filterLabelIds.some((id) => pLabelIds.includes(id))) return false;
+    }
+    return true;
   });
 
   if (loading) {
@@ -100,6 +123,39 @@ export default function ProductListScreen() {
           <Plus size={22} color={colors.primaryForeground} />
         </TouchableOpacity>
       </View>
+
+      {availableLabels.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.labelChips}
+        >
+          {availableLabels.map((lbl) => {
+            const active = filterLabelIds.includes(lbl.id);
+            return (
+              <TouchableOpacity
+                key={lbl.id}
+                onPress={() =>
+                  setFilterLabelIds((prev) =>
+                    active ? prev.filter((id) => id !== lbl.id) : [...prev, lbl.id]
+                  )
+                }
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: active ? lbl.color : "transparent",
+                    borderColor: lbl.color,
+                  },
+                ]}
+              >
+                <Text style={[styles.chipText, { color: active ? "#fff" : lbl.color }]}>
+                  {lbl.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <FlatList
         data={filtered}
@@ -182,5 +238,21 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: fontSize.md,
+  },
+  labelChips: {
+    flexDirection: "row",
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+    gap: spacing.xs,
+  },
+  chip: {
+    borderWidth: 1,
+    borderRadius: 99,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  chipText: {
+    fontSize: fontSize.xs,
+    fontWeight: "600",
   },
 });

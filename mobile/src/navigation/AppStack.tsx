@@ -31,6 +31,13 @@ import BonLivraisonDetailScreen from "../screens/commerce/BonLivraisonDetailScre
 import CreancesScreen from "../screens/commerce/CreancesScreen";
 import AchatsQuotidiensScreen from "../screens/commerce/AchatsQuotidiensScreen";
 import FacturesRecurrentesScreen from "../screens/commerce/FacturesRecurrentesScreen";
+import ExchangeProductsScreen from "../screens/commerce/ExchangeProductsScreen";
+import DemandesClientsScreen from "../screens/commerce/DemandesClientsScreen";
+import ScanInvoiceScreen from "../screens/commerce/ScanInvoiceScreen";
+import MaintenanceListScreen from "../screens/maintenance/MaintenanceListScreen";
+import MaintenanceDetailScreen from "../screens/maintenance/MaintenanceDetailScreen";
+import CreateMaintenanceScreen from "../screens/maintenance/CreateMaintenanceScreen";
+import LabelsScreen from "../screens/entrepot/LabelsScreen";
 
 // Boutique
 import BoutiqueDashboardScreen from "../screens/boutique/BoutiqueDashboardScreen";
@@ -112,6 +119,15 @@ export type AppStackParamList = {
   Creances: undefined;
   AchatsQuotidiens: undefined;
   FacturesRecurrentes: undefined;
+  ExchangeProducts: undefined;
+  DemandesClients: undefined;
+  ScanInvoice: undefined;
+  // Maintenance
+  MaintenanceList: undefined;
+  MaintenanceDetail: { ticketId: string };
+  CreateMaintenance: { ticketId?: string } | undefined;
+  // Entrepot labels (already in EntrepotStack but also in AppStack for cross-nav)
+  Labels: undefined;
   // Boutique
   BoutiqueDashboard: undefined;
   Catalogue: undefined;
@@ -212,6 +228,15 @@ export default function AppStack() {
       <Stack.Screen name="Creances" component={CreancesScreen} options={{ title: "Creances" }} />
       <Stack.Screen name="AchatsQuotidiens" component={AchatsQuotidiensScreen} options={{ title: "Achats quotidiens" }} />
       <Stack.Screen name="FacturesRecurrentes" component={FacturesRecurrentesScreen} options={{ title: "Factures recurrentes" }} />
+      <Stack.Screen name="ExchangeProducts" component={ExchangeProductsScreen} options={{ title: "Produits repris" }} />
+      <Stack.Screen name="DemandesClients" component={DemandesClientsScreen} options={{ title: "Demandes clients" }} />
+      <Stack.Screen name="ScanInvoice" component={ScanInvoiceScreen} options={{ title: "Scanner facture" }} />
+
+      {/* Maintenance */}
+      <Stack.Screen name="MaintenanceList" component={MaintenanceListScreen} options={{ title: "Maintenance" }} />
+      <Stack.Screen name="MaintenanceDetail" component={MaintenanceDetailScreen} options={{ title: "Ticket maintenance" }} />
+      <Stack.Screen name="CreateMaintenance" component={CreateMaintenanceScreen}
+        options={({ route }) => ({ title: (route.params as any)?.ticketId ? "Modifier ticket" : "Nouveau ticket" })} />
 
       {/* Boutique */}
       <Stack.Screen name="BoutiqueDashboard" component={BoutiqueDashboardScreen} options={{ title: "Boutique" }} />

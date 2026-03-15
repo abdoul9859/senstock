@@ -279,7 +279,10 @@ const DevisDetailPage = () => {
                 <ArrowRightCircle className="h-3.5 w-3.5 mr-1" /> Convertir en facture
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" onClick={() => {
+              const token = localStorage.getItem("senstock_token");
+              window.open(`/api/print/quotation/${quote._id || quote.id}?token=${token}`, "_blank");
+            }}>
               <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
             </Button>
             <SendWhatsAppButton

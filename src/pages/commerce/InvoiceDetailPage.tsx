@@ -86,6 +86,7 @@ interface ExchangeItem {
   quantity: number;
   notes: string;
   addToStock: boolean;
+  label?: { id: string; name: string; color: string } | null;
 }
 
 interface InvoiceDetail {
@@ -146,7 +147,9 @@ const InvoiceDetailPage = () => {
 
   useEffect(() => {
     if (autoPrint && invoice && !loading) {
-      setTimeout(() => window.print(), 500);
+      // Redirect to server-rendered print template
+      const token = localStorage.getItem("senstock_token");
+      window.location.href = `/api/print/invoice/${invoice._id || invoice.id}?token=${token}`;
     }
   }, [autoPrint, invoice, loading]);
 
@@ -392,7 +395,10 @@ const InvoiceDetailPage = () => {
                 <Truck className="h-3.5 w-3.5 mr-1" /> Generer BL
               </Button>
             )}
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+            <Button variant="outline" size="sm" onClick={() => {
+              const token = localStorage.getItem("senstock_token");
+              window.open(`/api/print/invoice/${invoice._id || invoice.id}?token=${token}`, "_blank");
+            }}>
               <Printer className="h-3.5 w-3.5 mr-1" /> Imprimer
             </Button>
             <SendWhatsAppButton
@@ -503,6 +509,7 @@ const InvoiceDetailPage = () => {
                         <TableHead className="text-right">Prix</TableHead>
                         <TableHead className="text-center">Qte</TableHead>
                         <TableHead>Notes</TableHead>
+                        <TableHead>Étiquette</TableHead>
                         <TableHead className="text-center">Remis en stock</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -514,6 +521,18 @@ const InvoiceDetailPage = () => {
                           <TableCell className="text-right text-sm">{formatFCFA(ei.price)}</TableCell>
                           <TableCell className="text-center text-sm">{ei.quantity}</TableCell>
                           <TableCell className="text-xs text-muted-foreground">{ei.notes || "—"}</TableCell>
+                          <TableCell>
+                            {ei.label ? (
+                              <span
+                                className="rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
+                                style={{ backgroundColor: ei.label.color }}
+                              >
+                                {ei.label.name}
+                              </span>
+                            ) : (
+                              <span className="text-xs text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           <TableCell className="text-center">
                             <Badge variant={ei.addToStock ? "default" : "secondary"} className="text-[10px]">
                               {ei.addToStock ? "Oui" : "Non"}

@@ -17,6 +17,12 @@ dist-ssr
 *.local
 server/uploads
 
+# Backup/import files
+*.dump
+*.zip
+NUL
+exemple_old_app/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

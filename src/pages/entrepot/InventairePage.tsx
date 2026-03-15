@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { Package, Plus, Trash2, AlertTriangle, CircleX, ChevronDown, ChevronUp, Upload, ImageIcon, RotateCcw, LayoutGrid, List, Pencil, Eye, Dices, Search, X, Archive, ArchiveRestore, Truck, ChevronsUpDown, Check, Coins, Copy, Boxes, ExternalLink } from "lucide-react";
+import { useDraftSync } from "@/hooks/useDraftSync";
+import { DraftBanner } from "@/components/DraftBanner";
 import { StatCard } from "@/components/StockCard";
 import { StockLoader } from "@/components/StockLoader";
 import { EmptyState } from "@/components/EmptyState";
@@ -78,7 +80,15 @@ interface Variant {
   soldInvoiceNumber?: string;
   price?: number;
   supplier?: Supplier | null;
+  labelId?: string;
+  label?: ProductLabel | null;
   attributes?: Record<string, unknown>;
+}
+
+interface ProductLabel {
+  id: string;
+  name: string;
+  color: string;
 }
 
 interface Product {
@@ -98,6 +108,7 @@ interface Product {
   archived: boolean;
   attributes: Record<string, unknown>;
   variants: Variant[];
+  labels?: { label: ProductLabel }[];
 }
 
 // ---- Helpers ----
@@ -154,6 +165,7 @@ interface VariantForm {
   sold: boolean;
   price: string;
   supplierId: string;
+  labelId: string;
   attributes: Record<string, string>;
   showAttributes: boolean;
 }
@@ -250,6 +262,9 @@ const InventairePage = () => {
   const [filterBarcode, setFilterBarcode] = useState("all");
   const [filterSupplier, setFilterSupplier] = useState("all");
   const [filterStockOnly, setFilterStockOnly] = useState(false);
+  const [filterLabels, setFilterLabels] = useState<string[]>([]);
+  const [availableLabels, setAvailableLabels] = useState<ProductLabel[]>([]);
+  const [formLabels, setFormLabels] = useState<string[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   const [archiving, setArchiving] = useState(false);
   const [page, setPage] = useState(1);
@@ -267,6 +282,44 @@ const InventairePage = () => {
   const [bulkAutoBarcode, setBulkAutoBarcode] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const initialFormRef = useRef<string>("");
+
+  // Draft sync for product creation — with live auto-sync
+  const applyRemoteData = useCallback((data: Record<string, unknown>) => {
+    if (!dialogOpen || editingId) return; // Only auto-sync when creating (not editing)
+    setForm({
+      name: (data.name as string) || "",
+      description: (data.description as string) || "",
+      category: (data.category as string) || (data.categoryId as string) || "",
+      brand: (data.brand as string) || "",
+      model: (data.model as string) || "",
+      purchasePrice: data.purchasePrice != null ? String(data.purchasePrice) : "",
+      costPrice: data.costPrice != null ? String(data.costPrice) : "",
+      sellingPrice: data.sellingPrice != null ? String(data.sellingPrice) : "",
+      supplier: (data.supplier as string) || (data.supplierId as string) || "",
+      notes: (data.notes as string) || "",
+      image: (data.image as string) || (data.imageUrl as string) || "",
+      quantity: data.quantity != null ? String(data.quantity) : "0",
+      attributes: (data.attributes as Record<string, string>) || {},
+      variants: Array.isArray(data.variants) ? data.variants as any[] : [],
+    });
+    if (data.labelIds) setFormLabels(data.labelIds as string[]);
+    else if (data.productLabelIds) setFormLabels(data.productLabelIds as string[]);
+  }, [dialogOpen, editingId]);
+
+  const { otherDrafts, saveDraft, clearDraft, loadOtherDraft } = useDraftSync({
+    type: "product",
+    enabled: true,
+    onRemoteUpdate: applyRemoteData,
+  });
+
+  // Auto-save draft when product form is open and data changes
+  useEffect(() => {
+    if (!dialogOpen || deleteConfirm || editingId) return;
+    const { name, brand, model, description, categoryId, purchasePrice, costPrice, sellingPrice, supplierId, notes, quantity, image, attributes, variants } = form;
+    // Only save if at least the name has content
+    if (!name.trim()) return;
+    saveDraft({ name, brand, model, description, categoryId, purchasePrice, costPrice, sellingPrice, supplierId, notes, quantity, image, attributes, variants, labelIds: formLabels });
+  }, [dialogOpen, deleteConfirm, editingId, form, formLabels, saveDraft]);
 
   // Fetch products
   const fetchProducts = useCallback(async () => {
@@ -309,11 +362,19 @@ const InventairePage = () => {
     }
   }, []);
 
+  const fetchLabels = useCallback(async () => {
+    try {
+      const res = await fetch("/api/product-labels", { headers: getHeaders() });
+      if (res.ok) setAvailableLabels(await res.json());
+    } catch { /* ignore */ }
+  }, []);
+
   useEffect(() => {
     fetchProducts();
     fetchCategories();
     fetchSuppliers();
-  }, [fetchProducts, fetchCategories, fetchSuppliers]);
+    fetchLabels();
+  }, [fetchProducts, fetchCategories, fetchSuppliers, fetchLabels]);
 
   // Auto-open product view from ?product= query param (e.g. from invoice detail)
   useEffect(() => {
@@ -429,10 +490,16 @@ const InventairePage = () => {
       const stock = getStock(p);
       if (stock === 0) return false;
     }
+    // Labels filter
+    if (filterLabels.length > 0) {
+      const productLabelIds = (p.labels || []).map((l) => l.label.id);
+      const hasMatch = filterLabels.some((lid) => productLabelIds.includes(lid));
+      if (!hasMatch) return false;
+    }
     return true;
   });
 
-  const hasActiveFilters = search || filterCategory !== "all" || filterStock !== "all" || filterCondition !== "all" || filterVariants || filterPriceMin || filterPriceMax || filterBrand || filterModel || filterBarcode !== "all" || filterSupplier !== "all" || filterStockOnly || showArchived;
+  const hasActiveFilters = search || filterCategory !== "all" || filterStock !== "all" || filterCondition !== "all" || filterVariants || filterPriceMin || filterPriceMax || filterBrand || filterModel || filterBarcode !== "all" || filterSupplier !== "all" || filterStockOnly || showArchived || filterLabels.length > 0;
 
   function clearFilters() {
     setSearch("");
@@ -448,6 +515,7 @@ const InventairePage = () => {
     setFilterSupplier("all");
     setFilterStockOnly(false);
     setShowArchived(false);
+    setFilterLabels([]);
     setPage(1);
   }
 
@@ -493,6 +561,7 @@ const InventairePage = () => {
   function openCreate() {
     setEditingId(null);
     setForm(emptyForm);
+    setFormLabels([]);
     initialFormRef.current = JSON.stringify(emptyForm);
     setError("");
     setDuplicateVariantIndices(new Set());
@@ -545,12 +614,14 @@ const InventairePage = () => {
           sold: v.sold || false,
           price: v.price != null ? String(v.price) : "",
           supplierId: v.supplier?._id || "",
+          labelId: v.labelId || "",
           attributes: vAttrs,
           showAttributes: false,
         };
       }),
     };
     setForm(editForm);
+    setFormLabels((product.labels || []).map((l) => l.label.id));
     initialFormRef.current = JSON.stringify(editForm);
     setError("");
     setDuplicateVariantIndices(new Set());
@@ -608,11 +679,13 @@ const InventairePage = () => {
     if (hasFormChanged()) {
       setConfirmCloseOpen(true);
     } else {
+      clearDraft();
       setDialogOpen(false);
     }
   }
 
   function forceCloseDialog() {
+    clearDraft();
     setConfirmCloseOpen(false);
     setDialogOpen(false);
   }
@@ -738,6 +811,7 @@ const InventairePage = () => {
         notes: form.notes,
         image: form.image,
         attributes: form.attributes,
+        labelIds: formLabels,
       };
 
       if (selectedCategory?.hasVariants) {
@@ -754,6 +828,7 @@ const InventairePage = () => {
             sold: v.sold,
             price: v.price ? parseFloat(v.price) : undefined,
             supplier: v.supplierId || undefined,
+            labelId: v.labelId || undefined,
             attributes: Object.keys(overrides).length > 0 ? overrides : undefined,
           };
         });
@@ -775,6 +850,7 @@ const InventairePage = () => {
         setError(data.error || "Erreur lors de la sauvegarde");
         return;
       }
+      clearDraft();
       setDialogOpen(false);
       fetchProducts();
     } catch {
@@ -847,7 +923,7 @@ const InventairePage = () => {
   // ---- Variant helpers ----
   function addVariants(count = 1) {
     const newVariants = Array.from({ length: count }, () => ({
-      serialNumber: "", barcode: "", condition: "neuf" as const, sold: false, price: "", supplierId: "", attributes: {} as Record<string, string>, showAttributes: false,
+      serialNumber: "", barcode: "", condition: "neuf" as const, sold: false, price: "", supplierId: "", labelId: "", attributes: {} as Record<string, string>, showAttributes: false,
     }));
     setForm((f) => ({
       ...f,
@@ -1000,6 +1076,37 @@ const InventairePage = () => {
   // ---- Render ----
   return (
     <div>
+      {/* Cross-device draft notification */}
+      <DraftBanner
+        drafts={otherDrafts}
+        className="mb-4"
+        onResume={() => {
+          const data = loadOtherDraft();
+          if (!data) return;
+          setForm({
+            name: (data.name as string) || "",
+            description: (data.description as string) || "",
+            category: (data.category as string) || (data.categoryId as string) || "",
+            brand: (data.brand as string) || "",
+            model: (data.model as string) || "",
+            purchasePrice: data.purchasePrice != null ? String(data.purchasePrice) : "",
+            costPrice: data.costPrice != null ? String(data.costPrice) : "",
+            sellingPrice: data.sellingPrice != null ? String(data.sellingPrice) : "",
+            supplier: (data.supplier as string) || (data.supplierId as string) || "",
+            notes: (data.notes as string) || "",
+            image: (data.image as string) || (data.imageUrl as string) || "",
+            quantity: data.quantity != null ? String(data.quantity) : "0",
+            attributes: (data.attributes as Record<string, string>) || {},
+            variants: Array.isArray(data.variants) ? data.variants as any[] : [],
+          });
+          if (data.labelIds) setFormLabels(data.labelIds as string[]);
+          else if (data.productLabelIds) setFormLabels(data.productLabelIds as string[]);
+          setEditingId(null);
+          setDialogOpen(true);
+          toast.success("Brouillon repris depuis l'autre appareil");
+        }}
+      />
+
       <div className="mb-6 flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Inventaire</h2>
         <div className="flex items-center gap-2">
@@ -1145,6 +1252,33 @@ const InventairePage = () => {
                   </SelectContent>
                 </Select>
               </div>
+              {availableLabels.length > 0 && (
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Étiquettes</Label>
+                  <div className="flex flex-wrap gap-1.5 pt-0.5">
+                    {availableLabels.map((lbl) => {
+                      const active = filterLabels.includes(lbl.id);
+                      return (
+                        <button
+                          key={lbl.id}
+                          type="button"
+                          onClick={() => setFilterLabels((prev) =>
+                            active ? prev.filter((id) => id !== lbl.id) : [...prev, lbl.id]
+                          )}
+                          className="flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-medium transition-all"
+                          style={{
+                            backgroundColor: active ? lbl.color : "transparent",
+                            borderColor: lbl.color,
+                            color: active ? "#fff" : lbl.color,
+                          }}
+                        >
+                          {lbl.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-medium uppercase tracking-wider text-muted-foreground">Modele</Label>
                 <Input
@@ -1442,6 +1576,19 @@ const InventairePage = () => {
                           </Badge>
                         )}
                       </div>
+                      {p.labels && p.labels.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mt-0.5">
+                          {p.labels.map((li) => (
+                            <span
+                              key={li.label.id}
+                              className="rounded-full px-1.5 py-0 text-[10px] font-medium text-white leading-5"
+                              style={{ backgroundColor: li.label.color }}
+                            >
+                              {li.label.name}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                       {p.brand && (
                         <p className="text-xs text-muted-foreground mt-0.5">{p.brand}{p.model ? ` · ${p.model}` : ""}</p>
                       )}
@@ -1520,6 +1667,34 @@ const InventairePage = () => {
                 : "Remplissez les informations pour creer un produit."}
             </DialogDescription>
           </DialogHeader>
+
+          {!editingId && (
+            <DraftBanner drafts={otherDrafts} className="mt-2" onResume={() => {
+              const draft = loadOtherDraft();
+              if (!draft) return;
+              setForm((f) => ({
+                ...f,
+                name: (draft.name as string) || f.name,
+                description: (draft.description as string) || f.description,
+                categoryId: (draft.categoryId as string) || f.categoryId,
+                brand: (draft.brand as string) || f.brand,
+                model: (draft.model as string) || f.model,
+                purchasePrice: (draft.purchasePrice as string) || f.purchasePrice,
+                costPrice: (draft.costPrice as string) || f.costPrice,
+                sellingPrice: (draft.sellingPrice as string) || f.sellingPrice,
+                supplierId: (draft.supplierId as string) || f.supplierId,
+                notes: (draft.notes as string) || f.notes,
+                image: (draft.image as string) || (draft.imageUrl as string) || f.image,
+                quantity: (draft.quantity as string) || f.quantity,
+                attributes: (draft.attributes as Record<string, string>) || f.attributes,
+                variants: (draft.variants as VariantForm[]) || f.variants,
+              }));
+              const draftLabels = draft.labelIds || draft.productLabelIds;
+              if (Array.isArray(draftLabels)) {
+                setFormLabels(draftLabels as string[]);
+              }
+            }} />
+          )}
 
           <div className="space-y-4 py-2">
             {error && (
@@ -1959,6 +2134,21 @@ const InventairePage = () => {
                           </Button>
                         )}
                       </div>
+                      {availableLabels.length > 0 && (
+                        <div className="w-40">
+                          <select
+                            value={variant.labelId || ""}
+                            disabled={variant.sold}
+                            onChange={(e) => updateVariant(vi, { labelId: e.target.value })}
+                            className="h-9 w-full rounded-md border border-border bg-background px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring disabled:opacity-50"
+                          >
+                            <option value="">— Étiquette —</option>
+                            {availableLabels.map((lbl) => (
+                              <option key={lbl.id} value={lbl.id}>{lbl.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
                       {selectedCategory.attributes.length > 0 && !variant.sold && (
                         <Button
                           variant="ghost"
@@ -2038,6 +2228,35 @@ const InventairePage = () => {
                 onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))}
               />
             </div>
+
+            {/* Étiquettes */}
+            {availableLabels.length > 0 && (
+              <div className="space-y-2">
+                <Label>Étiquettes</Label>
+                <div className="flex flex-wrap gap-2">
+                  {availableLabels.map((lbl) => {
+                    const active = formLabels.includes(lbl.id);
+                    return (
+                      <button
+                        key={lbl.id}
+                        type="button"
+                        onClick={() => setFormLabels((prev) =>
+                          active ? prev.filter((id) => id !== lbl.id) : [...prev, lbl.id]
+                        )}
+                        className="flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-medium transition-all"
+                        style={{
+                          backgroundColor: active ? lbl.color : "transparent",
+                          borderColor: lbl.color,
+                          color: active ? "#fff" : lbl.color,
+                        }}
+                      >
+                        {lbl.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <DialogFooter className="flex-col gap-2 sm:flex-row sm:justify-between">
@@ -2272,6 +2491,7 @@ const InventairePage = () => {
                           <TableHead className="text-xs">Code-barres</TableHead>
                           <TableHead className="text-xs">Condition</TableHead>
                           <TableHead className="text-xs">Prix</TableHead>
+                          <TableHead className="text-xs">Étiquette</TableHead>
                           <TableHead className="text-xs">Statut</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -2295,6 +2515,18 @@ const InventairePage = () => {
                             </TableCell>
                             <TableCell className="text-sm">
                               {v.price != null ? formatPrice(v.price) : "—"}
+                            </TableCell>
+                            <TableCell>
+                              {v.label ? (
+                                <span
+                                  className="rounded-full px-2 py-0.5 text-[10px] font-medium text-white"
+                                  style={{ backgroundColor: v.label.color }}
+                                >
+                                  {v.label.name}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                             <TableCell>
                               {v.sold ? (

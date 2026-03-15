@@ -45,41 +45,34 @@ const faqs = [
 ];
 
 export default function FAQSection() {
-  const { ref, revealed } = useScrollReveal<HTMLDivElement>(0.1);
+  const { ref, revealed } = useScrollReveal<HTMLDivElement>(0.08);
 
   return (
     <section id="faq" className="relative py-24 sm:py-32" ref={ref}>
       <div className="mx-auto max-w-3xl px-4 sm:px-6">
         {/* Header */}
-        <div className="text-center">
-          <span
-            className={`mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary transition-all duration-700 ${
-              revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
+        <div
+          className={`text-center landing-reveal-up ${
+            revealed ? "revealed" : ""
+          }`}
+        >
+          <span className="mb-4 inline-block rounded-full bg-primary/10 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary">
             FAQ
           </span>
-          <h2
-            className={`text-3xl font-bold tracking-tight text-foreground transition-all duration-700 delay-100 sm:text-4xl lg:text-5xl ${
-              revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
             Questions <span className="text-primary">fréquentes</span>
           </h2>
-          <p
-            className={`mt-5 text-lg text-muted-foreground transition-all duration-700 delay-200 ${
-              revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"
-            }`}
-          >
+          <p className="mt-5 text-lg text-muted-foreground">
             Tout ce que vous devez savoir pour démarrer avec SenStock.
           </p>
         </div>
 
         {/* Accordion */}
         <div
-          className={`mt-12 transition-all duration-700 delay-300 ${
-            revealed ? "opacity-100 translate-y-0" : "opacity-0 translate-y-6"
+          className={`mt-12 landing-reveal-up ${
+            revealed ? "revealed" : ""
           }`}
+          style={{ transitionDelay: revealed ? "300ms" : "0ms" }}
         >
           <Accordion type="single" collapsible className="w-full space-y-3">
             {faqs.map((faq, i) => (
