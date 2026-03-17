@@ -44,7 +44,7 @@ async function loadUser(req, res, next) {
       }
       const user = await prisma.user.findUnique({
         where: { id: req.userId },
-        select: { id: true, name: true, email: true, role: true, tenantId: true, permissions: true },
+        select: { id: true, name: true, email: true, role: true, isSuperAdmin: true, tenantId: true, permissions: true },
       });
       if (user) {
         req.user = user;

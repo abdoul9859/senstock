@@ -15,7 +15,7 @@ function requirePlan(allowedPlans) {
           currentPlan: tenant.plan,
         });
       }
-      if (tenant.subscriptionStatus === "canceled" && tenant.plan !== "essai") {
+      if (tenant.subscriptionStatus === "canceled" && tenant.plan !== "essai" && tenant.plan !== "lancement") {
         return res.status(403).json({
           error: "Votre abonnement est annule",
           code: "SUBSCRIPTION_CANCELED",

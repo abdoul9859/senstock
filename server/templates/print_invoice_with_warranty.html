@@ -787,7 +787,7 @@
                 {% set display_note = invoice.notes | replace_regex('\n?\n?__(SERIALS|SIGNATURE|QUOTE_QTYS)__=.*$', '') %}
             {% endif %}
 
-            {% if display_note and display_note.strip() %}
+            {% if display_note and display_note | trim %}
             <div style="margin-bottom: 20px; padding: 12px; background-color: #f9fafb; border-radius: 8px; border-left: 4px solid var(--accent);">
                 <div style="font-weight: 700; font-size: 8pt; text-transform: uppercase; color: var(--accent); margin-bottom: 4px; letter-spacing: 0.5px;">Note</div>
                 <div style="font-size: 10pt; color: var(--text); white-space: pre-wrap; line-height: 1.5;">{{ display_note }}</div>

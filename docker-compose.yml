@@ -49,56 +49,8 @@ services:
       - EVOLUTION_API_KEY=${EVOLUTION_API_KEY:-evo_senstock_secret_key}
       - EVOLUTION_INSTANCE_NAME=${EVOLUTION_INSTANCE_NAME:-senstock}
 
-  app:
-    build: .
-    ports:
-      - "8080:8080"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    environment:
-      - NODE_ENV=development
-    depends_on:
-      - server
-
-  studio:
-    image: supabase/studio:20240101-8e4a094
-    ports:
-      - "3000:3000"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      STUDIO_PG_META_URL: http://pg-meta:8080
-      SUPABASE_URL: http://localhost:3000
-      SUPABASE_REST_URL: http://localhost:3001
-      SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.placeholder
-      NEXT_PUBLIC_ENABLE_LOGS: false
-
-  pg-meta:
-    image: supabase/postgres-meta:v0.83.2
-    ports:
-      - "8082:8080"
-    depends_on:
-      postgres:
-        condition: service_healthy
-    environment:
-      PG_META_PORT: 8080
-      PG_META_DB_HOST: postgres
-      PG_META_DB_PORT: 5432
-      PG_META_DB_NAME: senstock
-      PG_META_DB_USER: senstock
-      PG_META_DB_PASSWORD: senstock_pass
-
-  mobile:
-    build: ./mobile
-    ports:
-      - "8081:8081"
-    depends_on:
-      - server
-
   evolution-api:
-    image: atendai/evolution-api:v2.1.1
+    image: atendai/evolution-api:v2.2.3
     ports:
       - "8085:8080"
     depends_on:

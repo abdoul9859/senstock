@@ -12,9 +12,10 @@ import {
 import { useStaggerReveal } from "./useScrollReveal";
 
 /* ------------------------------------------------------------------ */
-/*  Countdown target: 1er septembre 2025                              */
+/*  Countdown target: 1er septembre 2026                              */
 /* ------------------------------------------------------------------ */
-const LAUNCH_END = new Date("2025-09-01T00:00:00").getTime();
+import { LAUNCH_END_DATE } from "@/config/planPermissions";
+const LAUNCH_END = LAUNCH_END_DATE.getTime();
 
 function useCountdown() {
   const [timeLeft, setTimeLeft] = useState(getTimeLeft());
@@ -108,7 +109,7 @@ export default function PricingSection() {
 
           <p className="mt-5 text-lg text-muted-foreground">
             Profitez de l'acces complet a SenStock sans aucun frais.
-            L'offre se termine le 1er septembre 2025.
+            L'offre se termine le 1er septembre 2026.
           </p>
         </div>
 
@@ -160,7 +161,7 @@ export default function PricingSection() {
                 <div className="flex flex-col">
                   <span className="text-lg font-semibold text-foreground">FCFA</span>
                   <span className="text-sm text-muted-foreground">
-                    jusqu'au 1er sept. 2025
+                    jusqu'au 1er sept. 2026
                   </span>
                 </div>
               </div>

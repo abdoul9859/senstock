@@ -232,6 +232,11 @@ export default function ProduitsReprisPage() {
                       </Badge>
                     )}
                   </div>
+                  {item.variantLabel && (
+                    <p className="text-xs font-mono text-muted-foreground mt-0.5">
+                      IMEI/S.N: {item.variantLabel}
+                    </p>
+                  )}
                   <p className="text-xs text-muted-foreground mt-1">
                     Facture <button
                       className="text-primary hover:underline"

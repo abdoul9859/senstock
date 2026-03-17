@@ -63,6 +63,7 @@ function toPublic(user) {
     name: user.name,
     email: user.email,
     role: user.role,
+    isSuperAdmin: user.isSuperAdmin || false,
     permissions: user.permissions || {},
     tenantId: user.tenantId,
   };

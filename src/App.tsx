@@ -112,8 +112,10 @@ import OnboardingPage from "./pages/onboarding/OnboardingPage";
 import GenericPage from "./pages/GenericPage";
 import NotificationsPage from "./pages/NotificationsPage";
 import ParametresGlobalPage from "./pages/ParametresGlobalPage";
+import WhatsAppSettingsPage from "./pages/WhatsAppSettingsPage";
 import CorbeillePage from "./pages/CorbeillePage";
 import EquipePage from "./pages/EquipePage";
+import SuperAdminPage from "./pages/SuperAdminPage";
 
 const queryClient = new QueryClient();
 
@@ -208,6 +210,7 @@ const AppRoutes = () => (
 
     <Route path="/" element={<LandingPage />} />
     <Route path="/onboarding" element={<RequireAuthOnly><OnboardingPage /></RequireAuthOnly>} />
+    <Route path="/super-admin" element={<RequireAuth><SuperAdminPage /></RequireAuth>} />
 
     <Route element={<RequireAuth><AppLayout /></RequireAuth>}>
       {/* Entrepôt */}
@@ -293,6 +296,7 @@ const AppRoutes = () => (
 
       {/* Système */}
       <Route path="/parametres" element={<ParametresGlobalPage />} />
+      <Route path="/parametres/whatsapp" element={<WhatsAppSettingsPage />} />
       <Route path="/equipe" element={<EquipePage />} />
       <Route path="/notifications" element={<NotificationsPage />} />
       <Route path="/corbeille" element={<CorbeillePage />} />

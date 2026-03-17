@@ -1,185 +1,173 @@
 /**
- * Evolution API client for WhatsApp integration.
- * Handles sending text/document messages and instance management.
+ * WhatsApp integration via Baileys — per-tenant instances.
+ * Each tenant gets their own WhatsApp connection with QR code.
  */
+const { default: makeWASocket, useMultiFileAuthState, DisconnectReason, fetchLatestBaileysVersion } = require("@whiskeysockets/baileys");
+const QRCode = require("qrcode");
+const path = require("path");
+const fs = require("fs");
 const prisma = require("../db");
-const logger = require("./logger");
+
+// Minimal pino-compatible silent logger for baileys
+const silentLogger = {
+  level: "silent",
+  trace: () => {}, debug: () => {}, info: () => {}, warn: () => {}, error: () => {}, fatal: () => {},
+  child: () => silentLogger,
+};
+
+// In-memory store: tenantId -> { socket, qr, status, phone, name }
+const connections = new Map();
+
+const AUTH_DIR = path.join(__dirname, "..", "whatsapp_sessions");
+if (!fs.existsSync(AUTH_DIR)) fs.mkdirSync(AUTH_DIR, { recursive: true });
 
 /**
- * Get WhatsApp config from CompanySettings for a given tenant.
- * Falls back to environment variables if no tenant-level config.
+ * Get connection info for a tenant (no socket exposed)
  */
-async function getWhatsAppConfig(tenantId) {
-  const settings = await prisma.companySettings.findUnique({
-    where: { tenantId },
-  });
-
-  if (settings && settings.whatsappEnabled) {
-    return {
-      apiUrl: settings.whatsappApiUrl || process.env.EVOLUTION_API_URL,
-      apiKey: settings.whatsappApiKey || process.env.EVOLUTION_API_KEY,
-      instanceName: settings.whatsappInstanceName || process.env.EVOLUTION_INSTANCE_NAME || "senstock",
-      connected: settings.whatsappConnected,
-    };
-  }
-
-  // Fallback to env vars if whatsapp is enabled via env
-  if (process.env.EVOLUTION_API_URL) {
-    return {
-      apiUrl: process.env.EVOLUTION_API_URL,
-      apiKey: process.env.EVOLUTION_API_KEY,
-      instanceName: process.env.EVOLUTION_INSTANCE_NAME || "senstock",
-      connected: false,
-    };
-  }
-
-  return null;
+function getStatus(tenantId) {
+  const conn = connections.get(tenantId);
+  if (!conn) return { status: "disconnected", qr: null, phone: null, name: null };
+  return { status: conn.status, qr: conn.qr, phone: conn.phone || null, name: conn.name || null };
 }
 
 /**
- * Normalize a Senegalese phone number to international format.
- * 77 123 45 67 → 221771234567
+ * Connect a tenant's WhatsApp — generates QR code
+ */
+async function connect(tenantId) {
+  const existing = connections.get(tenantId);
+  if (existing?.status === "connected" && existing?.socket) {
+    return { status: "connected" };
+  }
+
+  // Close existing socket
+  if (existing?.socket) {
+    try { existing.socket.end(); } catch {}
+  }
+
+  const sessionDir = path.join(AUTH_DIR, tenantId);
+  if (!fs.existsSync(sessionDir)) fs.mkdirSync(sessionDir, { recursive: true });
+  const { state, saveCreds } = await useMultiFileAuthState(sessionDir);
+
+  connections.set(tenantId, { status: "connecting", qr: null, socket: null, retries: 0, phone: null, name: null });
+
+  const { version } = await fetchLatestBaileysVersion();
+
+  const socket = makeWASocket({
+    version,
+    auth: state,
+    printQRInTerminal: false,
+    logger: silentLogger,
+    browser: ["SenStock", "Chrome", "1.0.0"],
+    connectTimeoutMs: 30000,
+  });
+
+  socket.ev.on("creds.update", saveCreds);
+
+  socket.ev.on("connection.update", async (update) => {
+    const { connection, lastDisconnect, qr } = update;
+
+    if (qr) {
+      try {
+        const qrDataUrl = await QRCode.toDataURL(qr, { width: 300, margin: 2 });
+        const conn = connections.get(tenantId) || {};
+        connections.set(tenantId, { ...conn, qr: qrDataUrl, status: "waiting_qr", socket });
+        console.log(`[WhatsApp] QR generated for tenant ${tenantId}`);
+      } catch (err) {
+        console.error(`[WhatsApp] QR error: ${err.message}`);
+      }
+    }
+
+    if (connection === "close") {
+      const statusCode = lastDisconnect?.error?.output?.statusCode;
+      const conn = connections.get(tenantId) || {};
+
+      if (statusCode === DisconnectReason.loggedOut) {
+        connections.set(tenantId, { status: "disconnected", qr: null, socket: null, retries: 0 });
+        try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+        // Update DB
+        await prisma.companySettings.updateMany({ where: { tenantId }, data: { whatsappConnected: false } }).catch(() => {});
+        console.log(`[WhatsApp] Logged out: ${tenantId}`);
+      } else if ((conn.retries || 0) < 3) {
+        connections.set(tenantId, { ...conn, status: "reconnecting", retries: (conn.retries || 0) + 1, socket: null });
+        setTimeout(() => connect(tenantId), 5000);
+      } else {
+        connections.set(tenantId, { status: "disconnected", qr: null, socket: null, retries: 0 });
+      }
+    }
+
+    if (connection === "open") {
+      const me = socket.user;
+      const phone = me?.id?.split(":")[0] || me?.id?.split("@")[0] || "";
+      const name = me?.name || "";
+      connections.set(tenantId, { status: "connected", qr: null, socket, retries: 0, phone, name });
+      // Update DB
+      await prisma.companySettings.updateMany({ where: { tenantId }, data: { whatsappConnected: true } }).catch(() => {});
+      console.log(`[WhatsApp] Connected: ${tenantId} (${phone} - ${name})`);
+    }
+  });
+
+  const conn = connections.get(tenantId) || {};
+  connections.set(tenantId, { ...conn, socket });
+
+  return { status: "connecting" };
+}
+
+/**
+ * Disconnect and clear session
+ */
+async function disconnect(tenantId) {
+  const conn = connections.get(tenantId);
+  if (conn?.socket) {
+    try { await conn.socket.logout(); } catch {}
+    try { conn.socket.end(); } catch {}
+  }
+  connections.delete(tenantId);
+  const sessionDir = path.join(AUTH_DIR, tenantId);
+  try { fs.rmSync(sessionDir, { recursive: true, force: true }); } catch {}
+  await prisma.companySettings.updateMany({ where: { tenantId }, data: { whatsappConnected: false } }).catch(() => {});
+  return { status: "disconnected" };
+}
+
+/**
+ * Normalize phone number (Senegal default)
  */
 function normalizePhone(phone) {
   if (!phone) return "";
-  // Strip all non-digit characters
   let digits = phone.replace(/\D/g, "");
-  // If starts with 00221, remove the leading 00
   if (digits.startsWith("00221")) digits = digits.slice(2);
-  // If doesn't start with country code, add Senegal (+221)
-  if (!digits.startsWith("221") && digits.length >= 9) {
-    digits = "221" + digits;
-  }
+  if (!digits.startsWith("221") && digits.length >= 9) digits = "221" + digits;
   return digits;
 }
 
 /**
- * Send a text message via Evolution API.
+ * Send text message
  */
-async function sendText(config, phone, message) {
-  const url = `${config.apiUrl}/message/sendText/${config.instanceName}`;
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: config.apiKey,
-    },
-    body: JSON.stringify({
-      number: normalizePhone(phone),
-      text: message,
-    }),
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Evolution API error: ${res.status} — ${err}`);
-  }
-
-  return res.json();
+async function sendText(tenantId, phone, message) {
+  const conn = connections.get(tenantId);
+  if (!conn?.socket || conn.status !== "connected") throw new Error("WhatsApp non connecte");
+  const jid = normalizePhone(phone) + "@s.whatsapp.net";
+  await conn.socket.sendMessage(jid, { text: message });
+  return { success: true, to: jid };
 }
 
 /**
- * Send a document (PDF) via Evolution API.
+ * Send PDF document
  */
-async function sendDocument(config, phone, pdfBuffer, filename, caption) {
-  const url = `${config.apiUrl}/message/sendMedia/${config.instanceName}`;
-  const base64 = pdfBuffer.toString("base64");
-
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      apikey: config.apiKey,
-    },
-    body: JSON.stringify({
-      number: normalizePhone(phone),
-      mediatype: "document",
-      mimetype: "application/pdf",
-      media: base64,
-      fileName: filename,
-      caption: caption || "",
-    }),
+async function sendDocument(tenantId, phone, pdfBuffer, filename, caption) {
+  const conn = connections.get(tenantId);
+  if (!conn?.socket || conn.status !== "connected") throw new Error("WhatsApp non connecte");
+  const jid = normalizePhone(phone) + "@s.whatsapp.net";
+  await conn.socket.sendMessage(jid, {
+    document: pdfBuffer,
+    mimetype: "application/pdf",
+    fileName: filename,
+    caption: caption || "",
   });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Evolution API error: ${res.status} — ${err}`);
-  }
-
-  return res.json();
+  return { success: true, to: jid };
 }
 
 /**
- * Get the connection status of the WhatsApp instance.
- */
-async function getConnectionStatus(config) {
-  const url = `${config.apiUrl}/instance/connectionState/${config.instanceName}`;
-  const res = await fetch(url, {
-    headers: { apikey: config.apiKey },
-  });
-
-  if (!res.ok) {
-    return { connected: false, state: "disconnected" };
-  }
-
-  const data = await res.json();
-  return {
-    connected: data.instance?.state === "open",
-    state: data.instance?.state || "disconnected",
-  };
-}
-
-/**
- * Create and connect an instance. Returns QR code data.
- */
-async function connectInstance(config) {
-  // 1. Create instance (ignore if already exists)
-  const createUrl = `${config.apiUrl}/instance/create`;
-  try {
-    await fetch(createUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: config.apiKey,
-      },
-      body: JSON.stringify({
-        instanceName: config.instanceName,
-        qrcode: true,
-        integration: "WHATSAPP-BAILEYS",
-      }),
-    });
-  } catch {
-    // Instance may already exist — continue to connect
-  }
-
-  // 2. Get QR code
-  const connectUrl = `${config.apiUrl}/instance/connect/${config.instanceName}`;
-  const res = await fetch(connectUrl, {
-    headers: { apikey: config.apiKey },
-  });
-
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`Connect error: ${res.status} — ${err}`);
-  }
-
-  return res.json();
-}
-
-/**
- * Disconnect the WhatsApp instance.
- */
-async function disconnectInstance(config) {
-  const url = `${config.apiUrl}/instance/logout/${config.instanceName}`;
-  const res = await fetch(url, {
-    method: "DELETE",
-    headers: { apikey: config.apiKey },
-  });
-  return res.ok;
-}
-
-/**
- * Log a WhatsApp message to the database.
+ * Log message to DB
  */
 async function logMessage({ tenantId, recipientPhone, recipientName, type, documentType, documentId, documentNumber, message, status, errorMessage, sentBy }) {
   try {
@@ -199,18 +187,9 @@ async function logMessage({ tenantId, recipientPhone, recipientName, type, docum
       },
     });
   } catch (err) {
-    logger.error("Failed to log WhatsApp message:", err);
+    console.error("Failed to log WhatsApp message:", err.message);
     return null;
   }
 }
 
-module.exports = {
-  getWhatsAppConfig,
-  normalizePhone,
-  sendText,
-  sendDocument,
-  getConnectionStatus,
-  connectInstance,
-  disconnectInstance,
-  logMessage,
-};
+module.exports = { getStatus, connect, disconnect, normalizePhone, sendText, sendDocument, logMessage };

@@ -118,13 +118,11 @@ const FacturesPage = () => {
     setLoading(false);
   }, []);
 
-  useEffect(() => { fetchInvoices(); }, [fetchInvoices]);
-
-  // Debounced search for IMEI/barcode
+  // Single fetch — debounced search (also handles initial load when search is "")
   useEffect(() => {
     const timer = setTimeout(() => {
       fetchInvoices(search);
-    }, 400);
+    }, search ? 400 : 0);
     return () => clearTimeout(timer);
   }, [search, fetchInvoices]);
 
@@ -612,22 +610,24 @@ const FacturesPage = () => {
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
-                        <button
+                        <a
                           title="Voir"
                           aria-label="Voir la facture"
-                          onClick={() => navigate(`/commerce/factures/${inv._id}`)}
-                          className="p-1.5 rounded-md border border-cyan-500/40 text-cyan-500 hover:bg-cyan-500/10 transition-colors"
+                          href={`/commerce/factures/${inv._id}`}
+                          onClick={(e) => { e.preventDefault(); navigate(`/commerce/factures/${inv._id}`); }}
+                          className="p-1.5 rounded-md border border-cyan-500/40 text-cyan-500 hover:bg-cyan-500/10 transition-colors inline-flex"
                         >
                           <Eye className="h-3.5 w-3.5" />
-                        </button>
-                        <button
+                        </a>
+                        <a
                           title="Modifier"
                           aria-label="Modifier la facture"
-                          onClick={() => navigate(`/commerce/factures/modifier/${inv._id}`)}
-                          className="p-1.5 rounded-md border border-blue-500/40 text-blue-500 hover:bg-blue-500/10 transition-colors"
+                          href={`/commerce/factures/modifier/${inv._id}`}
+                          onClick={(e) => { e.preventDefault(); navigate(`/commerce/factures/modifier/${inv._id}`); }}
+                          className="p-1.5 rounded-md border border-blue-500/40 text-blue-500 hover:bg-blue-500/10 transition-colors inline-flex"
                         >
                           <Pencil className="h-3.5 w-3.5" />
-                        </button>
+                        </a>
                         {inv.status === "brouillon" && (
                           <button
                             title="Valider et envoyer"
@@ -674,8 +674,9 @@ const FacturesPage = () => {
                           </button>
                         )}
                         <button
+                          type="button"
                           title="Imprimer"
-                          onClick={() => navigate(`/commerce/factures/${inv._id}?print=true`)}
+                          onClick={() => window.open(`/api/print/invoice/${inv._id}?token=${localStorage.getItem("senstock_token")}`, "_blank")}
                           className="p-1.5 rounded-md border border-border text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
                         >
                           <Printer className="h-3.5 w-3.5" />

@@ -120,10 +120,8 @@ router.get("/invoice/:id", async (req, res) => {
     // Map status
     const statusMap = { brouillon: "Brouillon", envoyee: "Envoyée", payee: "Payée", partielle: "Partiellement payée", en_retard: "En retard", annulee: "Annulée" };
 
-    // Determine template
-    const template = invoice.warrantyEnabled
-      ? "print_invoice_with_warranty.html"
-      : "print_invoice.html";
+    // Always use the standard invoice template (it includes warranty section)
+    const template = "print_invoice.html";
 
     const html = nunjucks.render(template, {
       invoice: {
@@ -146,10 +144,7 @@ router.get("/invoice/:id", async (req, res) => {
         warranty_duration: invoice.warrantyDuration,
         items: mappedItems,
       },
-      // For warranty template: flat array; for standard: grouped
-      grouped_items: invoice.warrantyEnabled
-        ? mappedItems
-        : (grouped_items.length > 0 ? grouped_items : [{ title: null, items: mappedItems, subtotal: invoice.subtotal }]),
+      grouped_items: mappedItems,
       show_prices: invoice.showItemPrices !== false,
       settings,
       payments: invoice.paymentHistory || [],
@@ -183,13 +178,23 @@ router.get("/quotation/:id", async (req, res) => {
     const settings = await getSettings(req.tenantId);
     const style = req.query.style === "gold" ? "print_quotation_old.html" : "print_quotation.html";
 
+    // Map items to template format
+    const mappedItems = quotation.items.map((item) => ({
+      ...item,
+      product_name: item.description || "",
+      price: item.unitPrice || 0,
+      qty: item.quantity || 1,
+      is_section: item.type === "section",
+    }));
+
     const html = nunjucks.render(style, {
       quotation: {
         ...quotation,
         quotation_number: quotation.number,
         expiry_date: quotation.validUntil,
-        show_item_prices: quotation.showItemPrices,
+        show_item_prices: quotation.showItemPrices !== false,
         show_section_totals: quotation.showSectionTotals,
+        items: mappedItems,
       },
       settings,
     });

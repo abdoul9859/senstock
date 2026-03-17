@@ -68,8 +68,9 @@
         }
 
         .btn-primary {
-            background: var(--primary);
+            background: #1a1a1a;
             color: #fff;
+            cursor: pointer;
         }
 
         .btn-primary:hover {
@@ -499,11 +500,11 @@
 
     <!-- Controls -->
     <div class="print-controls">
-        <a href="javascript:history.back()" class="btn btn-secondary">
-            ← Retour
+        <a href="javascript:void(0)" onclick="window.close(); return false;" class="btn btn-secondary">
+            ← Fermer
         </a>
         <button onclick="window.print()" class="btn btn-primary">
-            Imprimer
+            🖨 Imprimer
         </button>
     </div>
 
@@ -515,7 +516,7 @@
                 {% if _logo %}
                 <img src="{{ _logo }}" alt="Logo" class="logo-img">
                 {% else %}
-                <div class="company-name">{{ settings.company_name or '{{ settings.company_name }}' }}</div>
+                <div class="company-name">{{ settings.company_name }}</div>
                 {% endif %}
             </div>
             <div class="text-right">
@@ -598,7 +599,7 @@
         <table>
             <thead>
                 <tr>
-                    {% if invoice.invoice_type and invoice.invoice_type.strip().lower() == 'exchange' %}
+                    {% if invoice.invoice_type and invoice.invoice_type | trim | lower == 'exchange' %}
                     <th style="width: 85%;">Désignation</th>
                     <th class="col-center" style="width: 15%;">Quantité</th>
                     {% else %}
@@ -629,7 +630,7 @@
                         {% endif %}
                     </td>
                     <td class="col-center">{{ item.qty }}</td>
-                    {% if not (invoice.invoice_type and invoice.invoice_type.strip().lower() == 'exchange') %}
+                    {% if not (invoice.invoice_type and invoice.invoice_type | trim | lower == 'exchange') %}
                     <td class="col-right">{{ item.price | format_cfa }}</td>
                     <td class="col-right font-bold">{{ item.total | format_cfa }}</td>
                     {% endif %}
@@ -647,7 +648,7 @@
             {% set display_note = invoice.notes | replace_regex('\n?\n?__(SERIALS|SIGNATURE|QUOTE_QTYS)__=.*$', '') %}
         {% endif %}
 
-        {% if display_note and display_note.strip() %}
+        {% if display_note and display_note | trim %}
         <div style="margin-bottom: 20px; padding: 10px; background-color: var(--bg-light); border-radius: 4px; border-left: 3px solid var(--accent);">
             <div style="font-weight: 600; font-size: 8pt; text-transform: uppercase; color: var(--accent); margin-bottom: 4px;">Note</div>
             <div style="font-size: 9pt; color: var(--primary); white-space: pre-wrap;">{{ display_note }}</div>

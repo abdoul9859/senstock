@@ -71,7 +71,7 @@ router.get("/", async (req, res) => {
     const products = productIds.length
       ? await prisma.product.findMany({
           where: { id: { in: productIds } },
-          select: { id: true, name: true, sku: true, variants: { select: { id: true, name: true, sku: true } } },
+          select: { id: true, name: true, brand: true, model: true, image: true, variants: { select: { id: true, serialNumber: true, barcode: true, condition: true } } },
         })
       : [];
     const productMap = Object.fromEntries(products.map((p) => [p.id, p]));

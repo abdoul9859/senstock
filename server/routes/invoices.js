@@ -339,6 +339,7 @@ router.get("/:id", async (req, res) => {
                 supplier: { select: { id: true, name: true, phone: true } },
               },
             },
+            variant: { select: { id: true, serialNumber: true, barcode: true, condition: true } },
           },
         },
         exchangeItems: { include: { label: true } },
@@ -383,8 +384,9 @@ router.get("/:id", async (req, res) => {
     }
 
     res.json(formatted);
-  } catch {
-    res.status(500).json({ error: "Erreur serveur" });
+  } catch (err) {
+    console.error("GET /invoices/:id error:", err.message);
+    res.status(500).json({ error: err.message });
   }
 });
 

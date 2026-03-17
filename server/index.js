@@ -63,6 +63,7 @@ const exchangeItemsRoutes = require("./routes/exchangeItems");
 const draftsRoutes = require("./routes/drafts");
 const backupRoutes = require("./routes/backup");
 const printRoutes = require("./routes/print");
+const superAdminRoutes = require("./routes/superAdmin");
 const { startCronJobs } = require("./lib/cron");
 
 const http = require("http");
@@ -119,6 +120,22 @@ app.use("/api/shop", storefrontRoutes);
 app.use("/api/shop/settings", shopSettingsRoutes.public);
 app.use("/api/paydunya", paydunyaRoutes);
 
+// WhatsApp webhook (no auth — called by Evolution API)
+app.post("/api/whatsapp/webhook", express.json(), (req, res) => {
+  const { setQrCode } = require("./lib/whatsapp");
+  const body = req.body;
+  const event = body.event;
+  const instance = body.instance;
+  if (event === "qrcode.updated" || event === "QRCODE_UPDATED") {
+    const qr = body.data?.qrcode?.base64 || body.data?.base64;
+    if (qr && instance) setQrCode(instance, qr);
+  }
+  if ((event === "connection.update" || event === "CONNECTION_UPDATE") && body.data?.state === "open") {
+    prisma.companySettings.updateMany({ where: { whatsappInstanceName: instance }, data: { whatsappConnected: true } }).catch(() => {});
+  }
+  res.json({ received: true });
+});
+
 // ═══ Protected routes (auth + tenant) ═══
 app.use("/api/stripe", auth, stripeRoutes.router);
 app.use("/api/categories", ...secured, categoriesRoutes);
@@ -167,6 +184,9 @@ app.use("/api/analytics", ...pro, analyticsRoutes);
 app.use("/api/bank-accounts", ...pro, bankAccountsRoutes);
 app.use("/api/bank-transactions", ...pro, bankTransactionsRoutes);
 app.use("/api/tasks", ...pro, tasksRoutes);
+
+// ═══ Super Admin ═══
+app.use("/api/super-admin", auth, loadUser, superAdminRoutes);
 
 // ═══ Health check ═══
 app.get("/api/health", (_req, res) => res.json({ status: "ok" }));

@@ -876,106 +876,24 @@ export default function ParametresGlobalPage() {
           </CardContent>
         </Card>
 
-        {/* WhatsApp Business (Evolution API) */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-green-500" />
-              WhatsApp Business
-              {whatsappStatus.connected ? (
-                <Badge variant="outline" className="ml-2 text-green-600 border-green-300 bg-green-50">Connecte</Badge>
-              ) : companyForm.whatsappEnabled ? (
-                <Badge variant="outline" className="ml-2 text-amber-600 border-amber-300 bg-amber-50">Deconnecte</Badge>
-              ) : null}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">
-              Connectez votre WhatsApp Business pour envoyer factures, devis et relances directement a vos clients.
-            </p>
-
-            <div className="flex items-center gap-3">
-              <Label htmlFor="wa-toggle" className="text-sm">Activer WhatsApp</Label>
-              <button
-                id="wa-toggle"
-                role="switch"
-                aria-checked={companyForm.whatsappEnabled}
-                onClick={() => updateCompany("whatsappEnabled", !companyForm.whatsappEnabled)}
-                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${companyForm.whatsappEnabled ? "bg-green-500" : "bg-muted"}`}
-              >
-                <span className={`inline-block h-4 w-4 rounded-full bg-white transition-transform ${companyForm.whatsappEnabled ? "translate-x-6" : "translate-x-1"}`} />
-              </button>
+        {/* WhatsApp Business */}
+        <Card className="cursor-pointer hover:border-green-500/30 transition-colors" onClick={() => navigate("/parametres/whatsapp")}>
+          <CardContent className="flex items-center gap-4 py-5">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/10">
+              <MessageCircle className="h-5 w-5 text-green-500" />
             </div>
-
-            {companyForm.whatsappEnabled && (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <Label>Nom de l'instance</Label>
-                    <Input
-                      value={companyForm.whatsappInstanceName}
-                      onChange={(e) => updateCompany("whatsappInstanceName", e.target.value)}
-                      placeholder="senstock"
-                    />
-                  </div>
-                  <div>
-                    <Label>URL Evolution API</Label>
-                    <Input
-                      value={companyForm.whatsappApiUrl}
-                      onChange={(e) => updateCompany("whatsappApiUrl", e.target.value)}
-                      placeholder="http://localhost:8085"
-                    />
-                  </div>
-                  <div className="sm:col-span-2">
-                    <Label>Cle API</Label>
-                    <Input
-                      type="password"
-                      value={companyForm.whatsappApiKey}
-                      onChange={(e) => updateCompany("whatsappApiKey", e.target.value)}
-                      placeholder="Votre cle API Evolution"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button onClick={saveCompanySettings} disabled={savingCompany} size="sm">
-                    {savingCompany ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Save className="h-4 w-4 mr-1" />}
-                    Enregistrer
-                  </Button>
-                  {!whatsappStatus.connected ? (
-                    <Button onClick={handleConnectWhatsApp} disabled={connectingWA} size="sm" variant="outline" className="text-green-600 border-green-300 hover:bg-green-50">
-                      {connectingWA ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <MessageCircle className="h-4 w-4 mr-1" />}
-                      Connecter WhatsApp
-                    </Button>
-                  ) : (
-                    <Button onClick={handleDisconnectWhatsApp} size="sm" variant="outline" className="text-red-500 border-red-300 hover:bg-red-50">
-                      <X className="h-4 w-4 mr-1" /> Deconnecter
-                    </Button>
-                  )}
-                  <Button onClick={fetchWhatsAppStatus} size="sm" variant="ghost">
-                    Actualiser le statut
-                  </Button>
-                </div>
-
-                {whatsappQR && (
-                  <div className="mt-4 p-4 border border-border rounded-lg bg-white text-center">
-                    <p className="text-sm font-medium mb-3">Scannez ce QR code avec WhatsApp</p>
-                    {whatsappQR.startsWith("data:") || whatsappQR.startsWith("iVBOR") ? (
-                      <img
-                        src={whatsappQR.startsWith("data:") ? whatsappQR : `data:image/png;base64,${whatsappQR}`}
-                        alt="QR Code WhatsApp"
-                        className="mx-auto max-w-[256px]"
-                      />
-                    ) : (
-                      <p className="text-sm text-muted-foreground font-mono">{whatsappQR}</p>
-                    )}
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Ouvrez WhatsApp &gt; Appareils lies &gt; Lier un appareil
-                    </p>
-                  </div>
+            <div className="flex-1">
+              <div className="flex items-center gap-2">
+                <span className="font-medium">WhatsApp Business</span>
+                {whatsappStatus.connected ? (
+                  <Badge variant="outline" className="text-green-600 border-green-300 bg-green-50 text-[10px]">Connecte</Badge>
+                ) : (
+                  <Badge variant="outline" className="text-muted-foreground text-[10px]">Non connecte</Badge>
                 )}
-              </>
-            )}
+              </div>
+              <p className="text-xs text-muted-foreground">Envoyer factures, devis et rappels via WhatsApp</p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
           </CardContent>
         </Card>
 

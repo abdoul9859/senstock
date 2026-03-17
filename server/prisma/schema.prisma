@@ -38,6 +38,7 @@ model User {
   email        String    @unique
   password     String    @default("")
   role         String    @default("admin") // admin, gerant
+  isSuperAdmin Boolean   @default(false)
   authProvider String    @default("email") // email, google, apple, magic
   permissions  Json      @default("{}") // granular permissions for gerant role
   avatarUrl    String?
@@ -49,6 +50,55 @@ model User {
   updatedAt    DateTime  @updatedAt
 
   @@index([tenantId])
+}
+
+// ─── App Config (super-admin) ───
+
+model AppConfig {
+  id                    String   @id @default(uuid())
+  appName               String   @default("SenStock")
+  launchActive          Boolean  @default(true)
+  launchEndDate         DateTime @default("2026-09-01T00:00:00.000Z")
+  earlyAdopterDiscount  Int      @default(50)
+  supportEmail          String   @default("support@senstock.app")
+  maintenanceMode       Boolean  @default(false)
+  // Landing page
+  heroTitle             String   @default("Gerez votre stock et vos ventes en toute simplicite")
+  heroSubtitle          String   @default("La solution complete pour les revendeurs et PME au Senegal")
+  heroCtaText           String   @default("Commencer gratuitement")
+  showTestimonials      Boolean  @default(true)
+  showPricing           Boolean  @default(true)
+  footerText            String   @default("")
+  announcementBanner    String   @default("")
+  // Plan pricing (FCFA/mois)
+  priceRevendeur        Int      @default(9900)
+  pricePremium          Int      @default(19900)
+  priceEntreprise       Int      @default(99900)
+  // Payment methods (toggle on/off)
+  payWave               Boolean  @default(false)
+  payOrangeMoney        Boolean  @default(false)
+  payFreeMoney          Boolean  @default(false)
+  payStripe             Boolean  @default(false)
+  payBankTransfer       Boolean  @default(true)
+  payCash               Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model PromoCode {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  description     String    @default("")
+  discountPercent Int       @default(0)   // % de reduction
+  discountMonths  Int       @default(1)   // nombre de mois offerts/reduits
+  maxUses         Int       @default(0)   // 0 = illimite
+  usedCount       Int       @default(0)
+  validFrom       DateTime  @default(now())
+  validUntil      DateTime?
+  planFilter      String    @default("")  // vide = tous les plans, sinon "premium,entreprise"
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 // ─── Inventory ───
@@ -160,6 +210,7 @@ model Variant {
   attributes        Json     @default("{}")
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+  invoiceItems      InvoiceItem[] @relation("InvoiceItemVariant")
 
   @@index([productId])
   @@index([serialNumber])
@@ -325,6 +376,7 @@ model InvoiceItem {
   productId     String?
   product       Product? @relation(fields: [productId], references: [id])
   variantId     String?
+  variant       Variant? @relation("InvoiceItemVariant", fields: [variantId], references: [id])
   description   String   @default("")
   quantity      Int      @default(1)
   unitPrice       Float    @default(0)

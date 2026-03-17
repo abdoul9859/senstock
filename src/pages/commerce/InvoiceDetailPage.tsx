@@ -69,6 +69,7 @@ interface InvoiceItem {
   type: "product" | "service" | "section";
   productId?: { _id: string; name: string; brand: string; model: string; image: string; supplier?: { _id: string; name: string; phone: string }; variants?: { _id: string; serialNumber: string; barcode: string; supplier?: { _id: string; name: string; phone: string } }[] };
   variantId?: string;
+  variant?: { id: string; serialNumber: string; barcode: string; condition: string };
   description: string;
   quantity: number;
   unitPrice: number;
@@ -147,9 +148,9 @@ const InvoiceDetailPage = () => {
 
   useEffect(() => {
     if (autoPrint && invoice && !loading) {
-      // Redirect to server-rendered print template
+      // Open server-rendered print template in new tab
       const token = localStorage.getItem("senstock_token");
-      window.location.href = `/api/print/invoice/${invoice._id || invoice.id}?token=${token}`;
+      window.open(`/api/print/invoice/${invoice._id || invoice.id}?token=${token}`, "_blank");
     }
   }, [autoPrint, invoice, loading]);
 
@@ -600,9 +601,11 @@ const InvoiceDetailPage = () => {
                               )}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
-                              {item.variantId && item.productId?.variants
-                                ? <span className="font-mono">{item.productId.variants.find((v) => v._id === item.variantId)?.serialNumber || ""}</span>
-                                : item.description || ""}
+                              {item.variant?.serialNumber
+                                ? <span className="font-mono">{item.variant.serialNumber}</span>
+                                : item.variantId && item.productId?.variants
+                                  ? <span className="font-mono">{item.productId.variants.find((v: {_id?: string; id?: string; serialNumber?: string}) => (v._id || v.id) === item.variantId)?.serialNumber || ""}</span>
+                                  : ""}
                             </TableCell>
                             <TableCell className="text-xs text-muted-foreground">
                               {(() => {

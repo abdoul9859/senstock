@@ -25,9 +25,39 @@ export interface PlanConfig {
   };
 }
 
-export type PlanType = "essai" | "premium" | "revendeur" | "entreprise";
+export type PlanType = "lancement" | "essai" | "premium" | "revendeur" | "entreprise";
+
+// Date de fin de la période de lancement gratuit
+export const LAUNCH_END_DATE = new Date("2026-09-01T00:00:00");
+export const isLaunchPeriod = () => Date.now() < LAUNCH_END_DATE.getTime();
 
 export const PLAN_PERMISSIONS: Record<PlanType, PlanConfig> = {
+  lancement: {
+    label: "Lancement Gratuit",
+    badge: "Offre limitee",
+    modules: ["entrepot", "commerce", "boutique", "personnel", "banque", "analytique", "logistique", "taches"],
+    limits: {
+      maxProducts: Infinity,
+      maxInvoicesPerMonth: Infinity,
+      maxUsers: 10,
+      storageBytes: 10 * 1024 * 1024 * 1024,
+    },
+    features: {
+      boutique: true,
+      analytique: true,
+      logistique: true,
+      personnel: true,
+      banque: true,
+      taches: true,
+      exportPdf: true,
+      exportExcel: true,
+      exportCsv: true,
+      multiTenant: false,
+      apiAccess: false,
+      prioritySupport: false,
+      whiteLabel: false,
+    },
+  },
   essai: {
     label: "Essai Gratuit",
     badge: "14 jours",

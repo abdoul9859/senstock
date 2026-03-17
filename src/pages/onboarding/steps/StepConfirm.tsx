@@ -44,7 +44,7 @@ export default function StepConfirm({ plan, company, invoice, onComplete, onBack
               <Crown className="h-5 w-5 text-primary" />
               <h3 className="font-semibold">Plan</h3>
             </div>
-            <Badge variant={plan === "free" ? "secondary" : "default"} className="text-sm">
+            <Badge variant={plan === "lancement" || plan === "essai" ? "secondary" : "default"} className="text-sm">
               {planConfig.label}
             </Badge>
             <p className="text-sm text-muted-foreground mt-2">

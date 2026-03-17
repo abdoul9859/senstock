@@ -1,31 +1,14 @@
 const express = require("express");
 const prisma = require("../db");
-const logger = require("../lib/logger");
-const { getWhatsAppConfig, sendText, sendDocument, getConnectionStatus, connectInstance, disconnectInstance, logMessage } = require("../lib/whatsapp");
-const { invoiceSent, quoteSent, deliveryNotification, debtReminder } = require("../lib/whatsappTemplates");
-const { generateInvoicePDF } = require("../lib/pdfGenerator");
-
+const wa = require("../lib/whatsapp");
 const router = express.Router();
 
 // ─── GET /api/whatsapp/status ───
 router.get("/status", async (req, res) => {
   try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.json({ enabled: false, connected: false });
-
-    const status = await getConnectionStatus(config);
-
-    // Sync connected state to DB
-    if (status.connected !== config.connected) {
-      await prisma.companySettings.updateMany({
-        where: { tenantId: req.tenantId },
-        data: { whatsappConnected: status.connected },
-      });
-    }
-
+    const status = wa.getStatus(req.tenantId);
     res.json({ enabled: true, ...status });
   } catch (err) {
-    logger.error("WhatsApp status error:", err);
     res.json({ enabled: false, connected: false, error: err.message });
   }
 });
@@ -33,32 +16,25 @@ router.get("/status", async (req, res) => {
 // ─── POST /api/whatsapp/connect ───
 router.post("/connect", async (req, res) => {
   try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.status(400).json({ error: "WhatsApp non configure" });
-
-    const result = await connectInstance(config);
+    const result = await wa.connect(req.tenantId);
     res.json(result);
   } catch (err) {
-    logger.error("WhatsApp connect error:", err);
     res.status(500).json({ error: err.message });
   }
+});
+
+// ─── GET /api/whatsapp/qr — Poll for QR code ───
+router.get("/qr", (req, res) => {
+  const status = wa.getStatus(req.tenantId);
+  res.json({ qr: status.qr, status: status.status });
 });
 
 // ─── POST /api/whatsapp/disconnect ───
 router.post("/disconnect", async (req, res) => {
   try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.status(400).json({ error: "WhatsApp non configure" });
-
-    await disconnectInstance(config);
-    await prisma.companySettings.updateMany({
-      where: { tenantId: req.tenantId },
-      data: { whatsappConnected: false },
-    });
-
+    await wa.disconnect(req.tenantId);
     res.json({ success: true });
   } catch (err) {
-    logger.error("WhatsApp disconnect error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -66,9 +42,6 @@ router.post("/disconnect", async (req, res) => {
 // ─── POST /api/whatsapp/send-invoice/:id ───
 router.post("/send-invoice/:id", async (req, res) => {
   try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.status(400).json({ error: "WhatsApp non configure" });
-
     const invoice = await prisma.invoice.findFirst({
       where: { id: req.params.id, tenantId: req.tenantId },
       include: { client: true, items: { include: { product: true }, orderBy: { sortOrder: "asc" } } },
@@ -76,27 +49,19 @@ router.post("/send-invoice/:id", async (req, res) => {
     if (!invoice) return res.status(404).json({ error: "Facture introuvable" });
     if (!invoice.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
-    const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "SenStock";
+    const settings = await prisma.companySettings.findFirst({ where: { tenantId: req.tenantId } });
+    const companyName = settings?.companyName || "SenStock";
 
-    // Generate PDF
-    const pdfBuffer = await generateInvoicePDF(invoice, settings || {});
-    const caption = invoiceSent({
-      clientName: invoice.client.name,
-      number: invoice.number,
-      total: invoice.total,
-      dueDate: invoice.dueDate,
-      companyName,
-    });
+    const caption = `Bonjour ${invoice.client.name},\n\nVeuillez trouver ci-joint votre facture *${invoice.number}* d'un montant de *${Number(invoice.total).toLocaleString("fr-FR")} F CFA*.\n\nCordialement,\n${companyName}`;
 
-    // Send PDF + text
-    await sendDocument(config, invoice.client.phone, pdfBuffer, `Facture_${invoice.number}.pdf`, caption);
+    // For now, send as text message (PDF integration later)
+    await wa.sendText(req.tenantId, invoice.client.phone, caption);
 
-    await logMessage({
+    await wa.logMessage({
       tenantId: req.tenantId,
       recipientPhone: invoice.client.phone,
       recipientName: invoice.client.name,
-      type: "document",
+      type: "text",
       documentType: "invoice",
       documentId: invoice.id,
       documentNumber: invoice.number,
@@ -107,7 +72,6 @@ router.post("/send-invoice/:id", async (req, res) => {
 
     res.json({ success: true, message: "Facture envoyee par WhatsApp" });
   } catch (err) {
-    logger.error("WhatsApp send invoice error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -115,36 +79,25 @@ router.post("/send-invoice/:id", async (req, res) => {
 // ─── POST /api/whatsapp/send-quote/:id ───
 router.post("/send-quote/:id", async (req, res) => {
   try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.status(400).json({ error: "WhatsApp non configure" });
-
     const quote = await prisma.quote.findFirst({
       where: { id: req.params.id, tenantId: req.tenantId },
-      include: { client: true, items: { include: { product: true }, orderBy: { sortOrder: "asc" } } },
+      include: { client: true },
     });
     if (!quote) return res.status(404).json({ error: "Devis introuvable" });
     if (!quote.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
-    const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "SenStock";
+    const settings = await prisma.companySettings.findFirst({ where: { tenantId: req.tenantId } });
+    const companyName = settings?.companyName || "SenStock";
 
-    // Generate PDF (reuse invoice PDF generator with type=devis)
-    const pdfBuffer = await generateInvoicePDF({ ...quote, type: "devis" }, settings || {});
-    const caption = quoteSent({
-      clientName: quote.client.name,
-      number: quote.number,
-      total: quote.total,
-      validUntil: quote.validUntil,
-      companyName,
-    });
+    const caption = `Bonjour ${quote.client.name},\n\nVeuillez trouver ci-joint votre devis *${quote.number}* d'un montant de *${Number(quote.total).toLocaleString("fr-FR")} F CFA*.\n\nValable jusqu'au ${quote.validUntil ? new Date(quote.validUntil).toLocaleDateString("fr-FR") : "N/A"}.\n\nCordialement,\n${companyName}`;
 
-    await sendDocument(config, quote.client.phone, pdfBuffer, `Devis_${quote.number}.pdf`, caption);
+    await wa.sendText(req.tenantId, quote.client.phone, caption);
 
-    await logMessage({
+    await wa.logMessage({
       tenantId: req.tenantId,
       recipientPhone: quote.client.phone,
       recipientName: quote.client.name,
-      type: "document",
+      type: "text",
       documentType: "quote",
       documentId: quote.id,
       documentNumber: quote.number,
@@ -155,52 +108,6 @@ router.post("/send-quote/:id", async (req, res) => {
 
     res.json({ success: true, message: "Devis envoye par WhatsApp" });
   } catch (err) {
-    logger.error("WhatsApp send quote error:", err);
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// ─── POST /api/whatsapp/send-delivery-note/:id ───
-router.post("/send-delivery-note/:id", async (req, res) => {
-  try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.status(400).json({ error: "WhatsApp non configure" });
-
-    const note = await prisma.deliveryNote.findFirst({
-      where: { id: req.params.id, tenantId: req.tenantId },
-      include: { client: true },
-    });
-    if (!note) return res.status(404).json({ error: "Bon de livraison introuvable" });
-    if (!note.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
-
-    const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "SenStock";
-
-    const message = deliveryNotification({
-      clientName: note.client.name,
-      number: note.number,
-      deliveryDate: note.deliveryDate,
-      companyName,
-    });
-
-    await sendText(config, note.client.phone, message);
-
-    await logMessage({
-      tenantId: req.tenantId,
-      recipientPhone: note.client.phone,
-      recipientName: note.client.name,
-      type: "text",
-      documentType: "delivery_note",
-      documentId: note.id,
-      documentNumber: note.number,
-      message,
-      status: "sent",
-      sentBy: req.user?.name || "",
-    });
-
-    res.json({ success: true, message: "Notification de livraison envoyee" });
-  } catch (err) {
-    logger.error("WhatsApp send delivery note error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -208,38 +115,27 @@ router.post("/send-delivery-note/:id", async (req, res) => {
 // ─── POST /api/whatsapp/send-debt-reminder/:id ───
 router.post("/send-debt-reminder/:id", async (req, res) => {
   try {
-    const config = await getWhatsAppConfig(req.tenantId);
-    if (!config) return res.status(400).json({ error: "WhatsApp non configure" });
-
     const creance = await prisma.creance.findFirst({
-      where: { id: req.params.id, tenantId: req.tenantId },
-      include: { client: true },
+      where: { id: req.params.id },
+      include: { client: true, invoice: true },
     });
     if (!creance) return res.status(404).json({ error: "Creance introuvable" });
     if (!creance.client?.phone) return res.status(400).json({ error: "Le client n'a pas de numero de telephone" });
 
-    const settings = await prisma.commerceSettings.findUnique({ where: { tenantId: req.tenantId } });
-    const companyName = settings?.businessName || "SenStock";
+    const settings = await prisma.companySettings.findFirst({ where: { tenantId: req.tenantId } });
+    const companyName = settings?.companyName || "SenStock";
 
-    const remaining = creance.amount - creance.amountPaid;
-    const message = debtReminder({
-      clientName: creance.client.name,
-      number: creance.invoiceNumber || creance.number,
-      amount: remaining,
-      dueDate: creance.dueDate,
-      companyName,
-    });
+    const message = `Bonjour ${creance.client.name},\n\nNous vous rappelons qu'un montant de *${Number(creance.amount).toLocaleString("fr-FR")} F CFA* est en attente de paiement${creance.dueDate ? ` (echeance: ${new Date(creance.dueDate).toLocaleDateString("fr-FR")})` : ""}.\n\nMerci de proceder au reglement dans les meilleurs delais.\n\nCordialement,\n${companyName}`;
 
-    await sendText(config, creance.client.phone, message);
+    await wa.sendText(req.tenantId, creance.client.phone, message);
 
-    await logMessage({
+    await wa.logMessage({
       tenantId: req.tenantId,
       recipientPhone: creance.client.phone,
       recipientName: creance.client.name,
       type: "text",
       documentType: "debt_reminder",
       documentId: creance.id,
-      documentNumber: creance.number,
       message,
       status: "sent",
       sentBy: req.user?.name || "",
@@ -247,7 +143,6 @@ router.post("/send-debt-reminder/:id", async (req, res) => {
 
     res.json({ success: true, message: "Relance envoyee par WhatsApp" });
   } catch (err) {
-    logger.error("WhatsApp send debt reminder error:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -257,20 +152,12 @@ router.get("/messages", async (req, res) => {
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
     const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 20));
-
     const [messages, total] = await Promise.all([
-      prisma.whatsAppMessage.findMany({
-        where: { tenantId: req.tenantId },
-        orderBy: { createdAt: "desc" },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
+      prisma.whatsAppMessage.findMany({ where: { tenantId: req.tenantId }, orderBy: { createdAt: "desc" }, skip: (page - 1) * limit, take: limit }),
       prisma.whatsAppMessage.count({ where: { tenantId: req.tenantId } }),
     ]);
-
     res.json({ messages, total, page, totalPages: Math.ceil(total / limit) });
   } catch (err) {
-    logger.error("WhatsApp messages error:", err);
     res.status(500).json({ error: "Erreur serveur" });
   }
 });

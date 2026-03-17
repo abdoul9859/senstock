@@ -26,7 +26,7 @@ router.get("/status", async (req, res) => {
 router.put("/plan", async (req, res) => {
   try {
     const { plan } = req.body;
-    const validPlans = ["essai", "premium", "revendeur", "entreprise"];
+    const validPlans = ["lancement", "essai", "premium", "revendeur", "entreprise"];
     if (!validPlans.includes(plan)) {
       return res.status(400).json({ error: "Plan invalide" });
     }
@@ -34,11 +34,11 @@ router.put("/plan", async (req, res) => {
     const tenant = await prisma.tenant.findUnique({ where: { id: req.tenantId } });
     if (!tenant) return res.status(404).json({ error: "Tenant non trouvé" });
 
-    if (plan === "essai") {
+    if (plan === "lancement" || plan === "essai") {
       await prisma.tenant.update({
         where: { id: req.tenantId },
         data: {
-          plan: "essai",
+          plan,
           onboardingStep: Math.max(tenant.onboardingStep, 1),
         },
       });

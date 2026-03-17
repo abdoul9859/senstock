@@ -368,7 +368,7 @@
 
     <!-- Controls -->
     <div class="print-controls">
-        <a href="javascript:history.back()" class="btn btn-secondary">
+        <a href="javascript:void(0)" onclick="if(history.length > 1) history.back(); else window.close();" class="btn btn-secondary">
             ← Retour
         </a>
         <button onclick="window.print()" class="btn btn-primary">
@@ -442,7 +442,7 @@
             <tbody>
                 {% for item in quotation.items %}
                 {% set pname = item.product_name | default('', true) %}
-                {% if not pname.startswith('[SECTION]') %}
+                {% if not (pname | replace("[SECTION]", "") != pname) %}
                 <tr>
                     <td>
                         <div class="item-title">{{ pname }}</div>

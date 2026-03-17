@@ -26,7 +26,7 @@ export default function OnboardingPage() {
 
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<PlanType>("free");
+  const [selectedPlan, setSelectedPlan] = useState<PlanType>("lancement");
   const [companyData, setCompanyData] = useState<CompanyData>({
     companyName: "",
     address: "",
